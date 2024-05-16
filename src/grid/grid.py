@@ -20,8 +20,21 @@ class GridCell:
         return self.coord[1]
 
     @property
+    def coord_list(self) -> list[float]:
+        """
+        Get the coordinate as a `list`
+        """
+        return self.coord.tolist()
+
+    @property
     def id(self) -> str:
+        """
+        Get the id of the grid cell
+        """
         return f"{self.x}_{self.y}"
+
+    def __repr__(self) -> str:
+        return f"GridCell(k={self.k}, coord={self.coord})"
 
 
 class Grid:
@@ -38,6 +51,12 @@ class Grid:
         self.grid_cells: list[GridCell] = []
 
     def generate_grid(self) -> list[GridCell]:
+        """
+        Generate grid cells
+
+        Returns:
+            list[GridCell] - grid cells
+        """
         grid: list[GridCell] = []
         cell_x_count = int((self.bound_x[1] - self.bound_x[0]) / self.k)
         cell_y_count = int((self.bound_y[1] - self.bound_y[0]) / self.k)
@@ -57,6 +76,13 @@ class Grid:
         points: list[np.ndarray[np.float64]],
         k: float,
     ) -> list[np.ndarray[np.float64]]:
+        """
+        Discretize points into grid cells
+
+        Args:
+            points: list[np.ndarray[np.float64]] - arbitrary points
+            k: float - grid cell size
+        """
         discretized_points = []
         coord_set: set[str] = set()
 
@@ -64,11 +90,11 @@ class Grid:
             x, y = point
             fitted_x = (x // k) * k
             fitted_y = (y // k) * k
-            id = f"{fitted_x}_{fitted_y}"
+            point_id = f"{fitted_x}_{fitted_y}"
 
-            if id in coord_set:
+            if point_id in coord_set:
                 continue
-            coord_set.add(id)
+            coord_set.add(point_id)
 
             coord = np.array([fitted_x, fitted_y])
             discretized_points.append(coord)
