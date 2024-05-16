@@ -11,6 +11,18 @@ class GridCell:
     k: int
     coord: np.ndarray[np.float64]
 
+    @property
+    def x(self) -> float:
+        return self.coord[0]
+
+    @property
+    def y(self) -> float:
+        return self.coord[1]
+
+    @property
+    def id(self) -> str:
+        return f"{self.x}_{self.y}"
+
 
 class Grid:
     """
@@ -18,11 +30,11 @@ class Grid:
     """
 
     def __init__(
-        self, k: float, bound: tuple[tuple[int, int], tuple[int, int]]
+        self, k: float, bound: tuple[tuple[float, float], tuple[float, float]]
     ) -> None:
         self.k: float = k
-        self.bound_x: tuple[int, int] = bound[0]
-        self.bound_y: tuple[int, int] = bound[1]
+        self.bound_x: tuple[float, float] = bound[0]
+        self.bound_y: tuple[float, float] = bound[1]
         self.grid_cells: list[GridCell] = []
 
     def generate_grid(self) -> list[GridCell]:
@@ -40,16 +52,18 @@ class Grid:
         self.grid_cells = grid
         return grid
 
-    def fit_to_grid(
-        self, arbitrary_points: list[np.ndarray[np.float64]]
-    ) -> list[GridCell]:
-        grid: list[GridCell] = []
+    @staticmethod
+    def discretize_points(
+        points: list[np.ndarray[np.float64]],
+        k: float,
+    ) -> list[np.ndarray[np.float64]]:
+        discretized_points = []
         coord_set: set[str] = set()
 
-        for point in arbitrary_points:
+        for point in points:
             x, y = point
-            fitted_x = (x // self.k) * self.k
-            fitted_y = (y // self.k) * self.k
+            fitted_x = (x // k) * k
+            fitted_y = (y // k) * k
             id = f"{fitted_x}_{fitted_y}"
 
             if id in coord_set:
@@ -57,6 +71,16 @@ class Grid:
             coord_set.add(id)
 
             coord = np.array([fitted_x, fitted_y])
-            grid.append(GridCell(k=self.k, coord=coord))
+            discretized_points.append(coord)
 
-        return grid
+        return discretized_points
+
+    def fit_to_grid(
+        self, arbitrary_points: list[np.ndarray[np.float64]]
+    ) -> list[GridCell]:
+        fitted_points = Grid.discretize_points(arbitrary_points, self.k)
+        grid_cells = [GridCell(k=self.k, coord=point) for point in fitted_points]
+        return grid_cells
+
+    def __repr__(self) -> str:
+        return f"Grid(k={self.k}, bound_x={self.bound_x}, bound_y={self.bound_y})"
