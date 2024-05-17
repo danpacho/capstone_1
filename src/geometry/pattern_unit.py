@@ -2,7 +2,8 @@ import numpy as np
 
 from math import ceil
 from typing import Callable, Literal
-from grid.grid import Grid, GridCell
+
+from src.grid.grid import Grid, GridCell
 
 
 class Shape:
@@ -148,6 +149,7 @@ class Transformer:
             for point in points
         ]
 
+    @staticmethod
     def mirror_y(
         points: list[np.ndarray[np.float64]],
         is_3dim: bool = True,
