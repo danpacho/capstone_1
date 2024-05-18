@@ -90,14 +90,23 @@ class Grid:
             x, y = point
             fitted_x = (x // k) * k
             fitted_y = (y // k) * k
-            point_id = f"{fitted_x}_{fitted_y}"
 
-            if point_id in coord_set:
-                continue
-            coord_set.add(point_id)
+            def add_coord_to_discretized_points(coord) -> bool:
+                coord_id = f"{coord[0]}_{coord[1]}"
+                if coord_id in coord_set:
+                    return False
 
-            coord = np.array([fitted_x, fitted_y])
-            discretized_points.append(coord)
+                coord_set.add(coord_id)
+                discretized_points.append(coord)
+                return True
+
+            target_coords: list[list[float, float]] = [
+                [fitted_x, fitted_y],
+                [fitted_x + k, fitted_y],  # compensate for the missing points
+            ]
+
+            for target_coord in target_coords:
+                add_coord_to_discretized_points(np.array(target_coord))
 
         return discretized_points
 
