@@ -365,11 +365,13 @@ class PatternTransformationVector:
             # X-axis mirror
             L_positive.extend(Transformer.mirror_x(L_positive))
 
-            Y_step = self.pattern_unit.h + self.pattern_transformation.Dy
-            Iter = ceil(((self.p_bound_y_max - self.p_bound_y_min) / 2) / Y_step) - 1
-            for i in range(Iter):
-                positive_dy = (i + 1) * Y_step
-                negative_dy = -1 * (i + 1) * Y_step
+            step_y = self.pattern_unit.h + self.pattern_transformation.Dy
+            grid_iter = (
+                ceil(((self.p_bound_y_max - self.p_bound_y_min) / 2) / step_y) - 1
+            )
+            for i in range(grid_iter):
+                positive_dy = (i + 1) * step_y
+                negative_dy = -1 * (i + 1) * step_y
                 L_translation.extend(Transformer.translate_y(L_positive, positive_dy))
                 L_translation.extend(Transformer.translate_y(L_positive, negative_dy))
 
