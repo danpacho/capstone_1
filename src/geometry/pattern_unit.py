@@ -10,8 +10,9 @@ class Shape:
     """
     shape class
     args:
-        bbox: shape bounding box, ((x_min, x_max), (y_min, y_max))
-        area_functions: list[Callable[[float, float], bool]] - area functions
+        w: float - bounding box width, bbox origin is (0, 0)
+        h: float - bounding box height, bbox origin is (0, 0)
+        area_functions: list[Callable[[float, float], bool]] - area functions that define the shape, should be form an closed area
     """
 
     def __init__(
