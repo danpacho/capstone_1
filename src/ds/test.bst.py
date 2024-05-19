@@ -27,7 +27,7 @@ def test_bst():
     assert bst.search(10) is None  # Key does not exist in the BST
 
     # Test list property
-    assert bst.list == [2, 3, 4, 5, 6, 7, 8]
+    assert bst.tolist == [2, 3, 4, 5, 6, 7, 8]
 
     # Test insert_list method
     bst.insert_list([1, 9, 10])
@@ -37,12 +37,12 @@ def test_bst():
     assert bst.search(10).key == 10
 
     # Test list property
-    assert bst.list == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert bst.tolist == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     # Test delete_list method
     bst.delete_list([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    assert bst.list == []
+    assert bst.tolist == []
 
     print("BST test passed.")
 
