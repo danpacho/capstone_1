@@ -1,8 +1,9 @@
 import numpy as np
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Literal, Union
 
+from src.geometry.vector import V2_group
 from src.geometry.pattern_unit import Shape, PatternUnit
 from src.ga.gene.gene import Gene
 from src.storage.vector_storage import VectorStorage
@@ -27,7 +28,7 @@ class ShapeParameter:
     ```
     """
 
-    a_f: list[Callable[[tuple[float, float], np.ndarray[np.float64]], bool]]
+    a_f: list[Callable[[tuple[float, float], V2_group], bool]]
     """
     Area functions for the shape
     
@@ -116,7 +117,7 @@ class ShapeParameter:
         """
 
         def to_af_with_params(
-            f: Callable[[tuple[float, float], np.ndarray[np.float64]], bool]
+            f: Callable[[tuple[float, float], V2_group], bool]
         ) -> Callable[[tuple[float, float]], bool]:
             return lambda x, y: f((x, y), parameter_list)
 
@@ -245,8 +246,91 @@ class ShapeGene(Gene):
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
 
-    def mutate(self) -> None:
-        raise NotImplementedError
+    def mutate(
+        self,
+        method: Union[Literal["rand", "rand_gaussian", "avg", "top5", "bottom5"]],
+    ) -> None:
+        if method == "rand":
+            self._mutate_random()
+        elif method == "rand_gaussian":
+            self._mutate_gaussian_random()
+        elif method == "avg":
+            self._mutate_avg()
+        elif method == "top5":
+            self._mutate_top5()
+        elif method == "bottom5":
+            self._mutate_bottom5()
 
-    def mutate_at(self, at: int) -> None:
-        raise NotImplementedError
+        else:
+            raise ValueError(f"Invalid mutation method: {method}")
+
+    def _mutate_random(self) -> None:
+        self.parameter_list = self.get_rand_parameter_list()
+
+    def _mutate_gaussian_random(self) -> None:
+        gaussian_parameter_list: list[float] = []
+        for i, param_id in enumerate(self.param.parameter_id_list):
+            gaussian_parameter_list[i] = self.pdf_storage.pick_random(param_id)
+
+        self.parameter_list = gaussian_parameter_list
+
+    def _mutate_top5(self) -> None:
+        top5_parameter_list: list[float] = []
+        for i, param_id in enumerate(self.param.parameter_id_list):
+            top5_parameter_list[i] = self.pdf_storage.pick_top5(param_id)
+
+        self.parameter_list = top5_parameter_list
+
+    def _mutate_bottom5(self) -> None:
+        bottom5_parameter_list: list[float] = []
+        for i, param_id in enumerate(self.param.parameter_id_list):
+            bottom5_parameter_list[i] = self.pdf_storage.pick_bottom5(param_id)
+
+        self.parameter_list = bottom5_parameter_list
+
+    def _mutate_avg(self) -> None:
+        avg_parameter_list: list[float] = []
+        for i, param_id in enumerate(self.param.parameter_id_list):
+            avg_parameter_list[i] = self.pdf_storage.pick_avg(param_id)
+
+        self.parameter_list = avg_parameter_list
+
+    def mutate_at(
+        self, method: Union[Literal["rand", "rand_gaussian", "avg", "top5"]], at: int
+    ) -> None:
+        if method == "rand":
+            self._mutate_random_at(at)
+        elif method == "rand_gaussian":
+            self._mutate_gaussian_random_at(at)
+        elif method == "avg":
+            self._mutate_avg_at(at)
+        elif method == "top5":
+            self._mutate_top5_at(at)
+        else:
+            raise ValueError(f"Invalid mutation method: {method}")
+
+    def _mutate_random_at(self, at: int) -> None:
+        self.parameter_list[at] = self.get_rand_parameter_at(at)
+
+    def _mutate_gaussian_random_at(self, at: int) -> None:
+        self.parameter_list[at] = self.pdf_storage.pick_random(
+            self.param.parameter_id_list[at]
+        )
+
+    def _mutate_top5_at(self, at: int) -> None:
+        self.parameter_list[at] = self.pdf_storage.pick_top5(
+            self.param.parameter_id_list[at]
+        )
+
+    def _mutate_avg_at(self, at: int) -> None:
+        self.parameter_list[at] = self.pdf_storage.pick_avg(
+            self.param.parameter_id_list[at]
+        )
+
+    def __repr__(self) -> str:
+        return f"ShapeGene({self.label}):" + "\n".join(
+            [
+                f"  {self.param.parameter_id_list[i]}: {self.parameter_list[i]}"
+                for i in range(len(self.param.parameter_id_list))
+            ]
+        )
