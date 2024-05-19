@@ -26,7 +26,7 @@ class TestJSONFileManager(unittest.TestCase):
         data = {"key": "value"}
         with open(self.filename, "w") as file:
             json.dump(data, file)
-        loaded_data = self.file_manager.read()
+        loaded_data = self.file_manager.load_json()
         self.assertEqual(loaded_data, data)
 
     def test_update(self):
