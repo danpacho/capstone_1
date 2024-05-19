@@ -1,9 +1,10 @@
 import numpy as np
 
 from math import ceil
-from typing import Callable, Literal
+from typing import Callable, Literal, Union
 
-from src.grid.grid import Grid, GridCell
+from src.geometry.vector import V, V2_group, V3_group
+from src.grid.grid import Grid
 
 
 class Shape:
@@ -57,24 +58,26 @@ class PatternUnit:
         self.grid = Grid(k=k, bound=(shape.bbox))
         self.grid.generate_grid()
 
-        self.shape_points: list[GridCell] = []
+        self.shape_matrix: V2_group = V.initialize_matrix_2d()
         self.generate_shape_points()
 
     def generate_shape_points(self, deduplicate: bool = True) -> None:
         # reset shape points
-        self.shape_points = []
+        self.shape_matrix: V2_group = V.initialize_matrix_2d()
 
         shape_point_ids: set[str] = set()
         for area_f in self.shape.area_function:
-            for cell in self.grid.grid_cells:
-                if area_f(cell.x, cell.y) and cell.id:
+            for cell in self.grid.grid_matrix:
+                x, y = cell
+                cell_id = f"{x}_{y}"
+                if area_f(x, y) and cell_id:
                     if deduplicate:
-                        if cell.id in shape_point_ids:
+                        if cell_id in shape_point_ids:
                             continue
-                        shape_point_ids.add(cell.id)
-                        self.shape_points.append(cell)
+                        shape_point_ids.add(cell_id)
+                        self.shape_matrix = V.append_v2(self.shape_matrix, cell)
                     else:
-                        self.shape_points.append(cell)
+                        self.shape_matrix = V.append_v2(self.shape_matrix, cell)
 
     @property
     def w(self) -> float:
@@ -91,97 +94,130 @@ class PatternUnit:
 class Transformer:
     @staticmethod
     def translate_x(
-        points: list[np.ndarray[np.float64]],
+        T_matrix: Union[V2_group, V3_group],
         dx: float,
         is_3dim: bool = True,
-    ) -> list[np.ndarray[np.float64]]:
-        return [
-            point + np.array([dx, 0, 0] if is_3dim else [dx, 0]) for point in points
+    ) -> Union[V2_group, V3_group]:
+        translated_points = [
+            (
+                V.vec3(
+                    point[0] + dx,
+                    point[1],
+                    point[2],
+                )
+                if is_3dim
+                else V.vec2(
+                    point[0] + dx,
+                    point[1],
+                )
+            )
+            for point in T_matrix
         ]
+        return np.array(translated_points)
 
     @staticmethod
     def translate_y(
-        points: list[np.ndarray[np.float64]],
+        T_matrix: Union[V2_group, V3_group],
         dy: float,
         is_3dim: bool = True,
-    ) -> list[np.ndarray[np.float64]]:
-        return [
-            point + np.array([0, dy, 0] if is_3dim else [0, dy]) for point in points
+    ) -> Union[V2_group, V3_group]:
+        translated_points = [
+            (
+                V.vec3(
+                    point[0],
+                    point[1] + dy,
+                    point[2],
+                )
+                if is_3dim
+                else V.vec2(
+                    point[0],
+                    point[1] + dy,
+                )
+            )
+            for point in T_matrix
         ]
+        return np.array(translated_points)
 
     @staticmethod
     def rotate(
-        points: list[np.ndarray[np.float64]], angle: float, is_3dim: bool = True
-    ) -> list[np.ndarray[np.float64]]:
-        return [
-            np.array(
-                [
+        T_matrix: Union[V2_group, V3_group], angle: float, is_3dim: bool = True
+    ) -> Union[V2_group, V3_group]:
+        rotated_points = [
+            (
+                V.vec3(
                     point[0] * np.cos(angle) - point[1] * np.sin(angle),
                     point[0] * np.sin(angle) + point[1] * np.cos(angle),
-                    angle,
-                ]
+                    point[2],
+                )
                 if is_3dim
-                else [
+                else V.vec2(
                     point[0] * np.cos(angle) - point[1] * np.sin(angle),
                     point[0] * np.sin(angle) + point[1] * np.cos(angle),
-                ]
+                )
             )
-            for point in points
+            for point in T_matrix
         ]
+
+        return np.array(rotated_points)
 
     @staticmethod
     def mirror_x(
-        points: list[np.ndarray[np.float64]],
+        T_matrix: Union[V2_group, V3_group],
         is_3dim: bool = True,
-    ) -> list[np.ndarray[np.float64]]:
-        return [
-            np.array(
-                [
+    ) -> Union[V2_group, V3_group]:
+        mirrored_points = [
+            (
+                V.vec3(
                     -point[0],
                     point[1],
                     point[2],
-                ]
+                )
                 if is_3dim
-                else [
+                else V.vec2(
                     -point[0],
                     point[1],
-                ]
+                )
             )
-            for point in points
+            for point in T_matrix
         ]
+        return np.array(mirrored_points)
 
     @staticmethod
     def mirror_y(
-        points: list[np.ndarray[np.float64]],
+        T_matrix: Union[V2_group, V3_group],
         is_3dim: bool = True,
-    ) -> list[np.ndarray[np.float64]]:
-        return [
-            np.array(
-                [
+    ) -> Union[V2_group, V3_group]:
+        mirrored_points = [
+            (
+                V.vec3(
                     point[0],
                     -point[1],
                     point[2],
-                ]
+                )
                 if is_3dim
-                else [
+                else V.vec2(
                     point[0],
                     -point[1],
-                ]
+                )
             )
-            for point in points
+            for point in T_matrix
         ]
+        return np.array(mirrored_points)
 
     @staticmethod
-    def transform(
-        points: list[np.ndarray[np.float64]],
+    def transform_rt(
+        T_matrix: Union[V2_group, V3_group],
         dx: float,
         dy: float,
         angle: float,
         is_3dim: bool = True,
-    ) -> list[np.ndarray[np.float64]]:
+    ) -> Union[V2_group, V3_group]:
+        """
+        Translation -> Rotation transformation
+        """
         return Transformer.translate_y(
             Transformer.translate_x(
-                Transformer.rotate(points, angle, is_3dim), dx, is_3dim
+                Transformer.rotate(T_matrix, angle, is_3dim), dx, is_3dim
             ),
             dy,
             is_3dim,
@@ -235,6 +271,9 @@ class PatternTransformation:
     def pattern_type(
         self,
     ) -> Literal["circular", "grid", "corn"]:
+        """
+        Determine the pattern type
+        """
         if (
             self.Dx != self.default
             and self.Phi != self.default
@@ -273,7 +312,7 @@ class PatternTransformationVector:
 
         self.Step: float = pattern_unit.w + pattern_transformation.Dx
 
-        self.L: list[np.ndarray[np.float64]] = []
+        self.T_matrix: V3_group = V.initialize_matrix_3d()
         self.generate_pattern_origin_vector()
 
     @property
@@ -301,10 +340,10 @@ class PatternTransformationVector:
         return self.p_bound_y[1]
 
     def generate_pattern_origin_vector(self) -> None:
-        L_vector: list[np.ndarray[np.float64]] = []
+        T_matrix = V.initialize_matrix_3d()
 
         # linear transformation (for x > 0)
-        L_positive: list[np.ndarray[np.float64]] = []
+        T_x_positive = V.initialize_matrix_3d()
 
         base_step = self.pattern_unit.w / 2 + self.pattern_transformation.Od
         positive_pattern_count = (
@@ -316,12 +355,12 @@ class PatternTransformationVector:
             positive_dy = 0
             phi = 0
 
-            L_positive.append(np.array([dx, positive_dy, phi]))
+            T_x_positive = V.append_v3(T_x_positive, V.vec3(dx, positive_dy, phi))
 
         # rotation transformation (for 0 < phi < 2*pi)
-        L_rotation: list[np.ndarray[np.float64]] = []
+        T_rotation = V.initialize_matrix_3d()
         # translation transformation (for p_bound_y_min <= dy <= p_bound_y_max)
-        L_translation: list[np.ndarray[np.float64]] = []
+        T_translation = V.initialize_matrix_3d()
 
         if self.pattern_transformation.pattern_type == "circular":
             if not self.pattern_transformation.is_safe_rotation(self.pattern_unit.h):
@@ -334,12 +373,9 @@ class PatternTransformationVector:
                 for i in range(int(2 * np.pi / self.pattern_transformation.Phi) - 1)
             ]
             for angle in rotation_group:
-                L_rotation.extend(
-                    [
-                        np.array([dx, dy, angle])
-                        for dx, dy, _ in Transformer.transform(L_positive, 0, 0, angle)
-                    ]
-                )
+                T_rotated = Transformer.rotate(T_x_positive, angle)
+                T_rotated = np.array([V.vec3(dx, dy, angle) for dx, dy, _ in T_rotated])
+                T_rotation = V.combine_mat_v3(T_rotation, T_rotated)
 
         elif self.pattern_transformation.pattern_type == "corn":
             if not self.pattern_transformation.is_safe_rotation(self.pattern_unit.h):
@@ -355,16 +391,15 @@ class PatternTransformationVector:
                     ]
                 )
             for angle in corn_rotation_group:
-                L_rotation.extend(
-                    [
-                        np.array([dx, dy, angle])
-                        for dx, dy, _ in Transformer.rotate(L_positive, angle)
-                    ]
-                )
+                T_rotated = Transformer.rotate(T_x_positive, angle)
+                T_rotated = np.array([V.vec3(dx, dy, angle) for dx, dy, _ in T_rotated])
+                T_rotation = V.combine_mat_v3(T_rotation, T_rotated)
 
         elif self.pattern_transformation.pattern_type == "grid":
             # X-axis mirror
-            L_positive.extend(Transformer.mirror_x(L_positive))
+            T_x_positive = V.combine_mat_v3(
+                T_x_positive, Transformer.mirror_x(T_x_positive)
+            )
 
             step_y = self.pattern_unit.h + self.pattern_transformation.Dy
             grid_iter = (
@@ -373,15 +408,19 @@ class PatternTransformationVector:
             for i in range(grid_iter):
                 positive_dy = (i + 1) * step_y
                 negative_dy = -1 * (i + 1) * step_y
-                L_translation.extend(Transformer.translate_y(L_positive, positive_dy))
-                L_translation.extend(Transformer.translate_y(L_positive, negative_dy))
+                T_translation = V.combine_mat_v3(
+                    T_translation, Transformer.translate_y(T_x_positive, positive_dy)
+                )
+                T_translation = V.combine_mat_v3(
+                    T_translation, Transformer.translate_y(T_x_positive, negative_dy)
+                )
 
         # Collect L groups
-        L_vector.extend(L_positive)
-        L_vector.extend(L_rotation)
-        L_vector.extend(L_translation)
+        T_matrix = V.combine_mat_v3(T_matrix, T_x_positive)
+        T_matrix = V.combine_mat_v3(T_matrix, T_rotation)
+        T_matrix = V.combine_mat_v3(T_matrix, T_translation)
 
-        self.L = L_vector
+        self.T_matrix = T_matrix
 
     def __repr__(self) -> str:
         return f"PatternTransformationVector(pattern_unit={self.pattern_unit}, pattern_transformation={self.pattern_transformation}, pattern_bound={self.pattern_bound})"
@@ -396,26 +435,23 @@ class Pattern:
         self.pattern_unit = pattern_unit
         self.pattern_transformation_vector = pattern_transformation_vector
 
-        self.pattern_points: list[GridCell] = []
-        self.generate_pattern_points()
+        self.pattern_matrix: V2_group = V.initialize_matrix_2d()
+        self.generate_pattern_vector()
 
-    def generate_pattern_points(self) -> None:
-        self.pattern_points: list[GridCell] = []
+    def generate_pattern_vector(self) -> None:
+        self.pattern_matrix = V.initialize_matrix_2d()
 
-        for transform_L in self.pattern_transformation_vector.L:
-            transformed_points = Grid.discretize_points(
-                Transformer.transform(
-                    [cell.coord for cell in self.pattern_unit.shape_points],
-                    transform_L[0],  # dx
-                    transform_L[1],  # dy
-                    transform_L[2],  # angle,
+        for T_vec in self.pattern_transformation_vector.T_matrix:
+            transformed_t_vec = Grid.discretize_points(
+                Transformer.transform_rt(
+                    self.pattern_unit.shape_matrix,
+                    T_vec[0],  # dx
+                    T_vec[1],  # dy
+                    T_vec[2],  # angle,
                     is_3dim=False,
                 ),
                 self.pattern_unit.grid.k,
             )
-            self.pattern_points.extend(
-                [
-                    GridCell(k=self.pattern_unit.grid.k, coord=point)
-                    for point in transformed_points
-                ]
+            self.pattern_matrix = V.combine_mat_v2(
+                self.pattern_matrix, transformed_t_vec
             )
