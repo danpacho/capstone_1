@@ -23,7 +23,7 @@ class Storage(Generic[StorageValue]):
         self.label = label
         self._io = JSONFileManager(root_path=self.root_path, label=label)
         self._io.load_json()
-        self._db: dict[str, StorageValue] = self._io.read()
+        self._db: dict[str, StorageValue] = self._io.load_json()
 
     def check_field_exist(self, field: str) -> bool:
         """
