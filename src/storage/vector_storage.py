@@ -1,3 +1,4 @@
+from typing import Union
 from src.ds.bst import BST
 from src.storage.storage_unit import Storage
 
@@ -10,18 +11,30 @@ class VectorStorage(Storage[list[float]]):
     def __init__(self, root_filename: str, label: str = "VectorStorage"):
         super().__init__(root_filename, label)
         self._db: dict[str, BST] = {}
-        loaded: dict[str, list[float]] = self._io.read()
+        self.load()
+
+    def load(self) -> None:
+        """
+        Load the storage unit from the file.
+        """
+        loaded: dict[str, list[float]] = self._io.load_json()
         for key, value in loaded.items():
             self._db[key] = BST()
             self._db[key].insert_list(value)
+
+    @property
+    def values(self) -> list[list[float]]:
+        """
+        Return all the values in the storage unit
+        """
+        return [value.tolist for value in self._db.values()]
 
     def save(self) -> None:
         """
         Save the storage unit to the file.
         """
-        json = {key: value.list for key, value in self._db.items()}
-        print(f"save {json}")
-        self._io.save_json(json)
+        to_json = {key: value.tolist for key, value in self._db.items()}
+        self._io.save_json(to_json)
 
     def insert_field(self, field: str, value: list[float]) -> None:
         """
@@ -33,10 +46,7 @@ class VectorStorage(Storage[list[float]]):
             value: T
                 The value to update.
         """
-        if not self.check_field_exist(field):
-            self._db[field] = BST()
-        else:
-            self._db[field].reset()
+        self._db[field] = BST()
 
         self._db[field].insert_list(value)
 
@@ -67,16 +77,17 @@ class VectorStorage(Storage[list[float]]):
         """
         if not self.check_field_exist(field):
             self._db[field] = BST()
+
         self._db[field].insert(value)
 
-    def inquire(self, field: str) -> list[float]:
+    def inquire(self, field: str) -> Union[list[float], None]:
         """
         Inquire field
         """
         if not self.check_field_exist(field):
             print(f"[{self.label}]: Field {field} does not exist.")
             return None
-        return self._db[field].list
+        return self._db[field].tolist
 
     def delete_field(self, field: str) -> None:
         """
@@ -108,7 +119,7 @@ class VectorStorage(Storage[list[float]]):
 
         self._db[field].delete_list(value)
 
-    def delete_single(self, field: str, value: float) -> None:
+    def delete_single(self, field: str, value: float) -> bool:
         """
         Delete a single value
 
@@ -120,6 +131,7 @@ class VectorStorage(Storage[list[float]]):
         """
         if not self.check_field_exist(field):
             print(f"[{self.label}]: Field {field} does not exist.")
-            return
+            return False
 
         self._db[field].delete(value)
+        return True
