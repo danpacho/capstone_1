@@ -68,7 +68,8 @@ class PatternUnit:
         shape_point_ids: set[str] = set()
         for area_f in self.shape.area_function:
             for cell in self.grid.grid_matrix:
-                x, y = cell
+                x = cell[0]
+                y = cell[1]
                 cell_id = f"{x}_{y}"
                 if area_f(x, y) and cell_id:
                     if deduplicate:
@@ -427,6 +428,10 @@ class PatternTransformationVector:
 
 
 class Pattern:
+    """
+    Pattern class
+    """
+
     def __init__(
         self,
         pattern_unit: PatternUnit,
