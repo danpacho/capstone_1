@@ -31,12 +31,14 @@ class BST:
     """
 
     def __init__(self) -> None:
+        self.table: dict[float, int] = {}
         self.root: Optional[Node] = None
 
     def insert(self, key: float) -> None:
         """
         Insert a key into the BST
         """
+        self.table[key] = self.table.get(key, 0) + 1
         self.root = self._insert(self.root, key)
 
     def insert_list(self, key_list: List[float]) -> None:
@@ -62,6 +64,8 @@ class BST:
         """
         Search for a key in the BST
         """
+        if self.table.get(key, 0) == 0:
+            return None
         return self._search(self.root, key)
 
     def _search(self, root: Optional[Node], key: float) -> Optional[Node]:
@@ -79,6 +83,12 @@ class BST:
         Delete a key from the BST
         """
         self.root = self._delete(self.root, key)
+
+        if self.table.get(key, 0) > 0:
+            self.table[key] -= 1
+            if self.table[key] == 0:
+                self.table.pop(key)
+
         return self.root
 
     def delete_list(self, key_list: List[float]) -> None:
@@ -114,8 +124,8 @@ class BST:
             root.count = temp.count
 
             # Delete the original successor node
-            temp.count = 1  # Reset temp node count since it's being deleted
             root.right = self._delete(root.right, root.key)
+            temp.count = 1  # Reset temp node count since it's being deleted
 
         return root
 
@@ -131,6 +141,13 @@ class BST:
         Return the inorder traversal of the BST, list[float]
         """
         return self._inorder(self.root)
+
+    @property
+    def list_inquire(self) -> List[float]:
+        """
+        Return the BST list, but can't ensure the order
+        """
+        return list(self.table.keys())
 
     def _inorder(self, root: Optional[Node]) -> List[float]:
         if root is None:
