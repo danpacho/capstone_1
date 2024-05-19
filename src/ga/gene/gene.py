@@ -10,12 +10,16 @@ class Gene:
 
     Attributes:
     label: str
-        The label of the gene
+        The label of the gene, unique to the gene
+    gene_id: uuid
+        The unique identifier of the gene, unique to the gene
     parameters: np.ndarray[np.float64]
         The parameters of the gene
     parameter_boundary: list[tuple[float, float]]
         The boundary of the parameters
     """
+
+    _id_counter = 0
 
     def __init__(
         self,
@@ -23,7 +27,12 @@ class Gene:
         parameter_count: int,
         parameter_boundary_list: list[tuple[float, float]],
     ) -> None:
+        self._id_counter += 1
+
         self.label = label
+        self.gene_id = self._id_counter
+        self.label = f"{label}_{self.gene_id}"  # e.g. SomeShape_2, where 2 means the instance number
+
         self.parameter_boundary_list = parameter_boundary_list
         self.parameter_list = np.zeros(parameter_count, dtype=np.float64)
 
@@ -74,16 +83,24 @@ class Gene:
         raise NotImplementedError
 
     @abstractmethod
-    def mutate(self) -> None:
+    def mutate(self, method: str) -> None:
         """
         Modifies the gene in a user-defined manner
+
+        Args:
+        method: str
+            The mutation method to use, e.g. `"random", "gaussian", "top5", "avg"`
         """
         raise NotImplementedError
 
     @abstractmethod
-    def mutate_at(self, at: int) -> None:
+    def mutate_at(self, method: str, at: int) -> None:
         """
         Modifies the gene at a specific position in a user-defined manner
+
+        Args:
+        method: str
+            The mutation method to use, e.g. `"random", "gaussian", "top5", "avg"`
         """
         raise NotImplementedError
 
@@ -93,20 +110,20 @@ class Gene:
         """
         return deepcopy(self)
 
-    def mutate_safe(self) -> None:
+    def mutate_safe(self, method: str) -> None:
         """
         Modifies the gene in a user-defined manner
         """
         copied = self.copy_gene()
-        copied.mutate()
+        copied.mutate(method)
         return copied
 
-    def mutate_at_safe(self, at: int) -> None:
+    def mutate_at_safe(self, method: str, at: int) -> None:
         """
         Modifies the gene at a specific position in a user-defined manner
         """
         copied = self.copy_gene()
-        copied.mutate_at(at)
+        copied.mutate_at(method, at)
         return copied
 
     def get_rand_parameter_at(self, at: int) -> np.float64:
