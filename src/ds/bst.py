@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, List
 
 
 class Node:
@@ -8,8 +8,8 @@ class Node:
 
     def __init__(self, key: float) -> None:
         self.key = key
-        self.left: Union[Node, None] = None
-        self.right: Union[Node, None] = None
+        self.left: Optional[Node] = None
+        self.right: Optional[Node] = None
         self.count = 1
 
     def add_count(self):
@@ -31,7 +31,7 @@ class BST:
     """
 
     def __init__(self) -> None:
-        self.root = None
+        self.root: Optional[Node] = None
 
     def insert(self, key: float) -> None:
         """
@@ -39,14 +39,14 @@ class BST:
         """
         self.root = self._insert(self.root, key)
 
-    def insert_list(self, key_list: list[float]) -> None:
+    def insert_list(self, key_list: List[float]) -> None:
         """
         Insert a list of keys into the BST
         """
         for key in key_list:
             self.insert(key)
 
-    def _insert(self, root: Node, key: float) -> Node:
+    def _insert(self, root: Optional[Node], key: float) -> Node:
         if root is None:
             return Node(key)
 
@@ -58,13 +58,13 @@ class BST:
             root.add_count()
         return root
 
-    def search(self, key: int) -> Union[Node, None]:
+    def search(self, key: float) -> Optional[Node]:
         """
         Search for a key in the BST
         """
         return self._search(self.root, key)
 
-    def _search(self, root: Node, key: float) -> Union[Node, None]:
+    def _search(self, root: Optional[Node], key: float) -> Optional[Node]:
         if root is None:
             return None
         if root.key == key:
@@ -74,21 +74,21 @@ class BST:
             return self._search(root.left, key)
         return self._search(root.right, key)
 
-    def delete(self, key: int) -> Union[Node, None]:
+    def delete(self, key: float) -> Optional[Node]:
         """
         Delete a key from the BST
         """
         self.root = self._delete(self.root, key)
         return self.root
 
-    def delete_list(self, key_list: list[float]) -> None:
+    def delete_list(self, key_list: List[float]) -> None:
         """
         Delete a list of keys from the BST
         """
         for key in key_list:
             self.delete(key)
 
-    def _delete(self, root: Node, key: float):
+    def _delete(self, root: Optional[Node], key: float) -> Optional[Node]:
         if root is None:
             return root
         if key < root.key:
@@ -96,34 +96,43 @@ class BST:
         elif key > root.key:
             root.right = self._delete(root.right, key)
         else:
-            if root.left is None:
-                return root.right
-            elif root.right is None:
-                return root.left
-
             if root.count > 1:  # If the key has duplicates
                 root.sub_count()
                 return root
 
-            root.key = self._find_successor(root.right)
+            # If the key has no duplicates
+            # Left child is None -> return right child
+            if root.left is None:
+                return root.right
+            # Right child is None -> return left child
+            elif root.right is None:
+                return root.left
+
+            # Should find successor from right subtree
+            temp = self._find_successor(root.right)
+            root.key = temp.key
+            root.count = temp.count
+
+            # Delete the original successor node
+            temp.count = 1  # Reset temp node count since it's being deleted
             root.right = self._delete(root.right, root.key)
 
         return root
 
-    def _find_successor(self, node) -> float:
+    def _find_successor(self, node: Node) -> Node:
         current = node
         while current.left is not None:
             current = current.left
         return current
 
     @property
-    def list(self) -> list[float]:
+    def tolist(self) -> List[float]:
         """
         Return the inorder traversal of the BST, list[float]
         """
         return self._inorder(self.root)
 
-    def _inorder(self, root: Node):
+    def _inorder(self, root: Optional[Node]) -> List[float]:
         if root is None:
             return []
         return (
@@ -132,7 +141,7 @@ class BST:
             + self._inorder(root.right)
         )
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Reset the BST
         """
