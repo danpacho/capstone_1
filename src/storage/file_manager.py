@@ -9,7 +9,7 @@ class FileManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read(self):
+    def load_json(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -28,13 +28,10 @@ class JSONFileManager(FileManager):
 
     def update_root_path(self, root_path: str):
         self.root_path = root_path
-        print(f"[{self.label}]: Root path updated to {self.root_path}.")
+        print(f"[{self.label}]: Root path updated to {self.root_path}")
 
     def create(self, data: dict):
         self.save_json(data)
-
-    def read(self):
-        return self.load_json()
 
     def update(self, data: dict):
         existing_data = self.load_json()
@@ -42,14 +39,15 @@ class JSONFileManager(FileManager):
         self.save_json(existing_data)
 
     def delete(self):
-
         os.remove(self.root_path)
         print(f"[{self.label}]: {self.root_path} has been deleted.")
 
     def load_json(self) -> dict:
         try:
             with open(self.root_path, "r", encoding="utf-8") as file:
-                return json.load(file)
+                loaded = json.load(file)
+                print(f"[{self.label}]: JSON data loaded from {self.root_path}")
+                return loaded
         except FileNotFoundError:
             print(f"[{self.label}]: {self.root_path} not found. Creating a new one.")
             self.create({})
@@ -58,4 +56,4 @@ class JSONFileManager(FileManager):
     def save_json(self, data: dict):
         with open(self.root_path, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
-        print(f"[{self.label}]: JSON data saved to {self.root_path}.")
+        print(f"[{self.label}]: JSON data saved to {self.root_path}")
