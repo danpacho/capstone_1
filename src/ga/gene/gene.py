@@ -3,6 +3,8 @@ import numpy as np
 from abc import abstractmethod
 from copy import deepcopy
 
+from src.storage.vector_storage import VectorStorage
+
 
 class Gene:
     """
@@ -12,29 +14,44 @@ class Gene:
     label: str
         The label of the gene, unique to the gene
     gene_id: uuid
-        The unique identifier of the gene, unique to the gene
+        The unique identifier of the gene, unique to the gene should be manually provided
     parameters: np.ndarray[np.float64]
         The parameters of the gene
     parameter_boundary: list[tuple[float, float]]
         The boundary of the parameters
     """
 
-    _id_counter = 0
+    parameter_storage: VectorStorage = VectorStorage("__gene_parameters")
+    """
+    The storage for the gene parameters
+
+    Example:
+    ```json
+    # __gene_parameters.json
+    {
+        "DonutShape_1": [1.0, 2.0], # parameter list for DonutShape_1
+        "DonutShape_2": [4.0, 5.0]  # parameter list for DonutShape_2
+    }
+    ```
+    """
 
     def __init__(
         self,
         label: str,
+        gene_id: str,
         parameter_count: int,
         parameter_boundary_list: list[tuple[float, float]],
     ) -> None:
-        self._id_counter += 1
 
         self.label = label
-        self.gene_id = self._id_counter
+        self.gene_id = gene_id
         self.label = f"{label}_{self.gene_id}"  # e.g. SomeShape_2, where 2 means the instance number
 
         self.parameter_boundary_list = parameter_boundary_list
-        self.parameter_list = np.zeros(parameter_count, dtype=np.float64)
+        self.parameter_count = parameter_count
+        self.parameter_list: np.ndarray[np.float64] = np.zeros(
+            parameter_count, dtype=np.float64
+        )
 
     @abstractmethod
     def print_parameter_info(self) -> None:
@@ -48,14 +65,14 @@ class Gene:
         raise NotImplementedError
 
     @abstractmethod
-    def update_gene(self, new_parameter_list: list[float]) -> None:
+    def update_gene(self, new_parameter_list: np.ndarray[np.float64]) -> None:
         """
         Updates a gene to a store
 
         Args:
         storage: Storage
             The storage object to save the gene to
-        new_parameter_list: list[float]
+        new_parameter_list: np.ndarray[np.float64]
             The new parameter list to replace the gene's current parameter list
         """
         raise NotImplementedError
@@ -130,7 +147,7 @@ class Gene:
         """
         Returns a random parameter value within the parameter boundary
         """
-        if at < 0 or at >= len(self.parameter_list):
+        if at < 0 or at >= self.parameter_count:
             raise ValueError("Index out of bounds")
 
         lower_bounds, upper_bounds = self.parameter_boundary_list[at]
@@ -140,8 +157,8 @@ class Gene:
         """
         Returns a list of random parameter values within the parameter boundary
         """
-        randomized_parameters = np.zeros(len(self.parameter_list), dtype=np.float64)
-        for i in range(len(self.parameter_list)):
+        randomized_parameters = np.zeros(self.parameter_count, dtype=np.float64)
+        for i in range(self.parameter_count):
             lower_bound, upper_bound = self.parameter_boundary_list[i]
             randomized_parameters[i] = np.random.uniform(lower_bound, upper_bound)
 
