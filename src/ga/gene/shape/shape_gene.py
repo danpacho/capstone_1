@@ -6,7 +6,6 @@ from typing import Callable, Literal, Union
 from src.geometry.vector import V2_group
 from src.geometry.pattern_unit import Shape, PatternUnit
 from src.ga.gene.gene import Gene
-from src.storage.vector_storage import VectorStorage
 from src.storage.stochastic_storage import StochasticStorage
 
 
@@ -23,12 +22,12 @@ class ShapeParameter:
 
     Example:
     ```python
-    bbox = (-10, 10, 0.25)
-    # x: -10 to 10, y: -10 to 10, k: 0.25
+    bbox = (10, 10, 0.25)
+    # width = 10, height = 10, resolution = 0.25
     ```
     """
 
-    a_f: list[Callable[[tuple[float, float], V2_group], bool]]
+    a_f: list[Callable[[tuple[float, float], np.ndarray[np.float64]], bool]]
     """
     Area functions for the shape
     
@@ -65,6 +64,13 @@ class ShapeParameter:
     """
 
     def __post_init__(self):
+        # Validate bbox
+        if len(self.bbox) != 3:
+            raise ValueError("bbox must have 3 elements.")
+        for val in self.bbox:
+            if val <= 0:
+                raise ValueError("bbox values must be greater than 0.")
+
         # Validate label count
         if len(self.label) == 0:
             raise ValueError("Shape id must not be empty.")
@@ -80,6 +86,12 @@ class ShapeParameter:
             raise ValueError(
                 "parameter_count does not match the length of parameter_boundary_list."
             )
+
+        for i, (lower, upper) in enumerate(self.parameter_boundary_list):
+            if lower >= upper:
+                raise ValueError(
+                    f"parameter_boundary_list[{i}] must have lower < upper."
+                )
 
     @property
     def w(self) -> float:
@@ -125,12 +137,7 @@ class ShapeParameter:
         return [to_af_with_params(f) for f in self.a_f]
 
     def __repr__(self) -> str:
-        return f"ShapeParameter({self.label}):" + "\n".join(
-            [
-                f"  {self.parameter_id_list[i]}: {self.parameter_boundary_list[i]}"
-                for i in range(len(self.parameter_id_list))
-            ]
-        )
+        return f"ShapeParameter({self.label})"
 
 
 class ShapeGene(Gene):
@@ -154,21 +161,7 @@ class ShapeGene(Gene):
         ```
     """
 
-    parameter_storage: VectorStorage
-    """
-    The storage for the gene parameters
-
-    Example:
-    ```json
-    # db.json
-    {
-        "DonutShape_1": [1.0, 2.0], # parameter list for DonutShape_1
-        "DonutShape_2": [4.0, 5.0]  # parameter list for DonutShape_2
-    }
-    ```
-    
-    """
-    pdf_storage: StochasticStorage
+    pdf_storage: StochasticStorage = StochasticStorage("__shape_gene_pdf")
     """
     The storage for the gene parameters pdf
 
@@ -181,13 +174,10 @@ class ShapeGene(Gene):
     }
     """
 
-    def __init__(
-        self,
-        shape_parameter: ShapeParameter,
-    ) -> None:
-
+    def __init__(self, shape_parameter: ShapeParameter, gene_id: str) -> None:
         super().__init__(
             shape_parameter.label,
+            gene_id,
             shape_parameter.parameter_count,
             shape_parameter.parameter_boundary_list,
         )
@@ -195,14 +185,24 @@ class ShapeGene(Gene):
         self.param = shape_parameter
         # Adapt the area parameter functions to the shape
         self.pattern_unit = PatternUnit(
-            Shape(shape_parameter.w, shape_parameter.h, shape_parameter.k),
-            shape_parameter.get_a_f_with_params(self.parameter_list),
+            Shape(
+                shape_parameter.w,
+                shape_parameter.h,
+                shape_parameter.get_a_f_with_params(self.parameter_list),
+            ),
+            shape_parameter.k,
         )
+
+        self.parameter_list = np.zeros(
+            shape_parameter.parameter_count, dtype=np.float64
+        )
+
+        self.load_gene()
 
     def print_parameter_info(self) -> None:
         parameter_info_array = "[ "
         for i, parameter in enumerate(self.parameter_list):
-            parameter_info_array += f"{self.param.parameter_id_list[i]}: {parameter}"
+            parameter_info_array += f"{self.param.parameter_id_list[i]}: {parameter}, "
         parameter_info_array += "]"
 
         return f"parameters: {parameter_info_array}"
@@ -224,20 +224,55 @@ class ShapeGene(Gene):
             for i in range(len(self.parameter_list))
         }
 
-    def update_gene(self, new_parameter_list: list[float]) -> None:
+    def _update_pattern_unit(self) -> None:
+        self.pattern_unit = PatternUnit(
+            Shape(
+                self.param.w,
+                self.param.h,
+                self.param.get_a_f_with_params(self.parameter_list),
+            ),
+            self.param.k,
+        )
+
+    def update_gene(self, new_parameter_list: np.ndarray[np.float64]) -> None:
         # Assume that parameter_list is already updated by `mutate` or `mutate_at`
-        # 1. Update parameter storage
-        self.parameter_storage.insert_field(self.label, self.parameter_list)
-        # 2. Update pdf storage
-        for param_id in self.param.parameter_id_list:
+        prev_list: list[float] = self.parameter_list.tolist()
+        curr_list: list[float] = new_parameter_list.tolist()
+        # 1. Replace parameter list at the parameter storage
+        self.parameter_storage.insert_field(self.label, curr_list)
+        # 2. Remove prev and add new parameters at the pdf
+        for i, param_id in enumerate(self.param.parameter_id_list):
             # Delete the old parameter list
-            self.pdf_storage.delete_list(param_id, self.parameter_list)
-            # Insert new parameter list
-            self.pdf_storage.insert_field(param_id, new_parameter_list)
+            self.pdf_storage.delete_single(param_id, prev_list[i])
+            # Insert the new parameter list
+            self.pdf_storage.insert_single(param_id, curr_list[i])
+
+        # 3. Update the parameter list
+        self.parameter_list = new_parameter_list
+
+        # 4. Update the pattern unit
+        self._update_pattern_unit()
 
     def load_gene(self) -> None:
         # Load parameters from the parameter storage
-        self.parameter_list = self.parameter_storage.inquire(self.label)
+        inquired = Gene.parameter_storage.inquire(self.label)
+        self.parameter_list = (
+            np.array(inquired, dtype=np.float64)
+            if inquired
+            else np.zeros(self.param.parameter_count, dtype=np.float64)
+        )
+
+        # Insert the gene if it does not exist
+        if inquired is None:
+            # 1. Insert the gene to the parameter storage
+            self.parameter_storage.insert_field(
+                self.label, self.parameter_list.tolist()
+            )
+            # 2. Insert the gene to the pdf storage
+            for i, param_id in enumerate(self.param.parameter_id_list):
+                self.pdf_storage.insert_single(param_id, self.parameter_list[i])
+
+        self._update_pattern_unit()
 
     def remove_gene(self) -> None:
         # Remove the gene information
@@ -246,55 +281,69 @@ class ShapeGene(Gene):
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
 
+        # Remove the pattern unit
+        self.pattern_unit = None
+
     def mutate(
         self,
-        method: Union[Literal["rand", "rand_gaussian", "avg", "top5", "bottom5"]],
+        method: Union[
+            Literal["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]
+        ],
     ) -> None:
+
         if method == "rand":
-            self._mutate_random()
+            self.update_gene(self._mutate_random())
         elif method == "rand_gaussian":
-            self._mutate_gaussian_random()
+            self.update_gene(self._mutate_gaussian_random())
         elif method == "avg":
-            self._mutate_avg()
+            self.update_gene(self._mutate_avg())
         elif method == "top5":
-            self._mutate_top5()
+            self.update_gene(self._mutate_top5())
         elif method == "bottom5":
-            self._mutate_bottom5()
+            self.update_gene(self._mutate_bottom5())
+        elif method == "preserve":
+            pass
 
-        else:
-            raise ValueError(f"Invalid mutation method: {method}")
+    def _mutate_random(self) -> np.ndarray[np.float64]:
+        return self.get_rand_parameter_list()
 
-    def _mutate_random(self) -> None:
-        self.parameter_list = self.get_rand_parameter_list()
-
-    def _mutate_gaussian_random(self) -> None:
-        gaussian_parameter_list: list[float] = []
+    def _mutate_gaussian_random(self) -> np.ndarray[np.float64]:
+        gaussian_parameter_list: np.ndarray[np.float64] = np.zeros(
+            self.param.parameter_count, dtype=np.float64
+        )
         for i, param_id in enumerate(self.param.parameter_id_list):
             gaussian_parameter_list[i] = self.pdf_storage.pick_random(param_id)
 
-        self.parameter_list = gaussian_parameter_list
+        return gaussian_parameter_list
 
-    def _mutate_top5(self) -> None:
-        top5_parameter_list: list[float] = []
+    def _mutate_top5(self) -> np.ndarray[np.float64]:
+        top5_parameter_list: np.ndarray[np.float64] = np.zeros(
+            self.param.parameter_count, dtype=np.float64
+        )
         for i, param_id in enumerate(self.param.parameter_id_list):
             top5_parameter_list[i] = self.pdf_storage.pick_top5(param_id)
 
-        self.parameter_list = top5_parameter_list
+        return top5_parameter_list
 
-    def _mutate_bottom5(self) -> None:
-        bottom5_parameter_list: list[float] = []
+    def _mutate_bottom5(self) -> np.ndarray[np.float64]:
+        bottom5_parameter_list: np.ndarray[np.float64] = np.zeros(
+            self.param.parameter_count, dtype=np.float64
+        )
         for i, param_id in enumerate(self.param.parameter_id_list):
             bottom5_parameter_list[i] = self.pdf_storage.pick_bottom5(param_id)
 
-        self.parameter_list = bottom5_parameter_list
+        return bottom5_parameter_list
 
-    def _mutate_avg(self) -> None:
-        avg_parameter_list: list[float] = []
+    def _mutate_avg(self) -> np.ndarray[np.float64]:
+        avg_parameter_list: np.ndarray[np.float64] = np.zeros(
+            self.param.parameter_count, dtype=np.float64
+        )
         for i, param_id in enumerate(self.param.parameter_id_list):
             avg_parameter_list[i] = self.pdf_storage.pick_avg(param_id)
 
         self.parameter_list = avg_parameter_list
 
+    # TODO: 여기 밑에 다시 리팩토링
     def mutate_at(
         self, method: Union[Literal["rand", "rand_gaussian", "avg", "top5"]], at: int
     ) -> None:
@@ -306,8 +355,9 @@ class ShapeGene(Gene):
             self._mutate_avg_at(at)
         elif method == "top5":
             self._mutate_top5_at(at)
-        else:
-            raise ValueError(f"Invalid mutation method: {method}")
+
+        # Update the pattern unit
+        self._update_pattern_unit()
 
     def _mutate_random_at(self, at: int) -> None:
         self.parameter_list[at] = self.get_rand_parameter_at(at)
