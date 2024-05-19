@@ -1,8 +1,8 @@
-from src.ga.gene.shape.shape_gene import ShapeGene, ShapeParameter
+from src.ga.gene.shape.shape_gene import ShapeParameter
 
 donut_params = ShapeParameter(
     label="DonutShape",
-    bbox=(-10, 10, 0.25),
+    bbox=(10, 10, 0.25),
     a_f=[
         lambda p, params: (p[0] ** 2 + p[1] ** 2) >= params[0]
         and (p[0] ** 2 + p[1] ** 2) <= params[1],
@@ -13,24 +13,23 @@ donut_params = ShapeParameter(
     # 2 <= r_inner <= 6, 7 <= r_outer <= 10
 )
 
-trapezoid_params = ShapeParameter(
-    label="TrapezoidShape",
-    bbox=(-10, 10, 0.25),
+# TODO: This is weird behavior for storing parameters at pdf
+trapezoid = ShapeParameter(
+    label="Trapezoid",
+    bbox=(10, 10, 0.25),
     a_f=[
-        lambda p, params: p[0] >= params[0]
-        and p[0] <= params[1]
-        and p[1] >= params[2]
-        and p[1] <= params[3],
-        # x >= x1 and x <= x2 and y >= y1 and y <= y2
+        lambda p, params: p[1]
+        <= ((params[1] - params[0]) / 10 * (p[0] - 5) + params[1])
+        and p[1] >= -((params[1] - params[0]) / 10 * (p[0] - 5) + params[1])
+        # y <= (k2 - k1) / 10 * (x - 5) + k2 and
     ],
-    parameter_id_list=["x1", "x2", "y1", "y2"],
-    parameter_boundary_list=[(-10, 10), (-10, 10), (-10, 10), (-10, 10)],
-    # -10 <= x1, x2, y1, y2 <= 10
+    parameter_id_list=["k1", "k2"],
+    parameter_boundary_list=[(2, 5), (1, 5)],
 )
 
 circle_params = ShapeParameter(
     label="CircleShape",
-    bbox=(-12.5, 12.5, 0.25),
+    bbox=(12.5, 12.5, 0.25),
     a_f=[
         lambda p, params: (p[0] ** 2 + p[1] ** 2) <= params[0],
         # x^2 + y^2 <= r^2
@@ -42,32 +41,32 @@ circle_params = ShapeParameter(
 
 triangle_params = ShapeParameter(
     label="TriangleShape",
-    bbox=(-10, 10, 0.25),
+    bbox=(10, 10, 0.25),
     a_f=[
         lambda p, params: p[0] >= 0 and p[1] >= 0 and p[0] + p[1] <= params[0],
         # x >= 0 and y >= 0 and x + y <= l
     ],
     parameter_id_list=["l"],
-    parameter_boundary_list=[(2, 10)],
+    parameter_boundary_list=[(3, 10)],
     # 2 <= l <= 10
 )
 
 wing_params = ShapeParameter(
     label="WingShape",
-    bbox=(-10, 10, 0.25),
+    bbox=(10, 10, 0.25),
     a_f=[
-        lambda p, params: p[0] >= 0
-        and p[1] >= 0
-        and p[1] <= p[0] ** 2 + params[0]
-        and p[1] <= -p[0] ** 2 + params[1],
-        # x >= 0 and y >= 0 and y <= x^2 + up1 and y <= -x^2 + up2
+        lambda p, params: p[1] >= p[0] ** 2 - params[0]
+        and p[1] <= -p[0] ** 2 + params[0],
+        # y <= x^2 - c and y <= -x^2 + c
     ],
-    parameter_id_list=["up1", "up2"],
-    parameter_boundary_list=[(2, 10), (-10, -2)],
+    parameter_id_list=["c"],
+    parameter_boundary_list=[(2, 5)],
 )
 
-DONUT = ShapeGene(shape_parameter=donut_params)
-TRAPEZOID = ShapeGene(shape_parameter=trapezoid_params)
-CIRCLE = ShapeGene(shape_parameter=circle_params)
-TRIANGLE = ShapeGene(shape_parameter=triangle_params)
-WING = ShapeGene(shape_parameter=wing_params)
+hole_params = ShapeParameter(
+    label="HoldShape",
+    bbox=(10, 10, 0.25),
+    a_f=[lambda p, params: (p[0] ** 2 + p[1] ** 2) >= params[0]],
+    parameter_id_list=["hole_r"],
+    parameter_boundary_list=[(2, 4)],
+)
