@@ -33,7 +33,8 @@ class StochasticStorage(VectorStorage):
 
     def _update_gaussian(self, field: str) -> None:
         if field in self._db:
-            samples = np.array(self._db[field].list)
+            # use the list_inquire, don't have to know the exact order of the data
+            samples = np.array(self._db[field].list_inquire)
             if field not in self._pdf:
                 self._pdf[field] = GaussianDistribution(samples)
             else:
@@ -68,3 +69,15 @@ class StochasticStorage(VectorStorage):
         Pick the bottom 5% value of the field.
         """
         return self._pdf[field].pick_bottom5()
+
+    @update_gaussian
+    def plot_distribution(
+        self,
+        field: str,
+    ) -> None:
+        """
+        Draw the distribution(Histogram) of the field.
+        """
+        self._pdf[field].plot_distribution(
+            xlabel=field, ylabel="Density", title=f"pdf({field})"
+        )
