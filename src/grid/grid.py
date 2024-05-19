@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import numpy as np
 
+from src.geometry.vector import V, V2_group
+
 
 @dataclass
 class GridCell:
@@ -9,14 +11,20 @@ class GridCell:
     """
 
     k: int
-    coord: np.ndarray[np.float64]
+    coord: V2_group
 
     @property
     def x(self) -> float:
+        """
+        Get the x coordinate
+        """
         return self.coord[0]
 
     @property
     def y(self) -> float:
+        """
+        Get the y coordinate
+        """
         return self.coord[1]
 
     @property
@@ -27,7 +35,7 @@ class GridCell:
         return self.coord.tolist()
 
     @property
-    def id(self) -> str:
+    def grid_id(self) -> str:
         """
         Get the id of the grid cell
         """
@@ -48,16 +56,16 @@ class Grid:
         self.k: float = k
         self.bound_x: tuple[float, float] = bound[0]
         self.bound_y: tuple[float, float] = bound[1]
-        self.grid_cells: list[GridCell] = []
+        self.grid_matrix: V2_group = V.initialize_matrix_2d()
 
-    def generate_grid(self) -> list[GridCell]:
+    def generate_grid(self) -> V2_group:
         """
-        Generate grid cells
+        Generate grid vector
 
         Returns:
-            list[GridCell] - grid cells
+            Gv - grid cell vector
         """
-        grid: list[GridCell] = []
+        grid_matrix = V.initialize_matrix_2d()
         cell_x_count = int((self.bound_x[1] - self.bound_x[0]) / self.k)
         cell_y_count = int((self.bound_y[1] - self.bound_y[0]) / self.k)
 
@@ -65,25 +73,25 @@ class Grid:
             for j in range(cell_y_count):
                 x = self.bound_x[0] + self.k * i
                 y = self.bound_y[0] + self.k * j
-                coord = np.array([x, y])
-                grid.append(GridCell(k=self.k, coord=coord))
+                coord_v: V2_group = V.vec2(x, y)
+                grid_matrix = V.append_v2(grid_matrix, coord_v)
 
-        self.grid_cells = grid
-        return grid
+        self.grid_matrix = grid_matrix
+        return grid_matrix
 
     @staticmethod
     def discretize_points(
-        points: list[np.ndarray[np.float64]],
+        points: V2_group,
         k: float,
-    ) -> list[np.ndarray[np.float64]]:
+    ) -> V2_group:
         """
-        Discretize points into grid cells
+        Discretize points into grid vector
 
         Args:
-            points: list[np.ndarray[np.float64]] - arbitrary points
+            points: Gv - arbitrary points
             k: float - grid cell size
         """
-        discretized_points = []
+        discretized_matrix = V.initialize_matrix_2d()
         coord_set: set[str] = set()
 
         for point in points:
@@ -91,31 +99,44 @@ class Grid:
             fitted_x = (x // k) * k
             fitted_y = (y // k) * k
 
-            def add_coord_to_discretized_points(coord) -> bool:
+            def add_coord_to_discretized_points(
+                coord: V2_group, discretized_points: V2_group
+            ) -> V2_group:
                 coord_id = f"{coord[0]}_{coord[1]}"
                 if coord_id in coord_set:
-                    return False
+                    return discretized_points
 
                 coord_set.add(coord_id)
-                discretized_points.append(coord)
-                return True
+                discretized_points = V.append_v2(discretized_points, coord)
+                return discretized_points
 
-            target_coords: list[list[float, float]] = [
-                [fitted_x, fitted_y],
-                [fitted_x + k, fitted_y],  # compensate for the missing points
-            ]
+            fitting_vec_groups: V2_group = np.array(
+                [
+                    [fitted_x, fitted_y],
+                    [fitted_x + k, fitted_y],  # compensate for the missing points
+                ]
+            )
 
-            for target_coord in target_coords:
-                add_coord_to_discretized_points(np.array(target_coord))
+            for fitting_vec in fitting_vec_groups:
+                discretized_matrix = add_coord_to_discretized_points(
+                    np.array(fitting_vec), discretized_matrix
+                )
 
-        return discretized_points
+        return discretized_matrix
 
-    def fit_to_grid(
-        self, arbitrary_points: list[np.ndarray[np.float64]]
-    ) -> list[GridCell]:
-        fitted_points = Grid.discretize_points(arbitrary_points, self.k)
-        grid_cells = [GridCell(k=self.k, coord=point) for point in fitted_points]
-        return grid_cells
+    def fit_to_grid(self, arbitrary_points: V2_group) -> V2_group:
+        """
+        Fit arbitrary points to grid cells
+        """
+        fitted_points: V2_group = Grid.discretize_points(arbitrary_points, self.k)
+        return fitted_points
 
     def __repr__(self) -> str:
         return f"Grid(k={self.k}, bound_x={self.bound_x}, bound_y={self.bound_y})"
+
+    @property
+    def grid_cell(self) -> list[GridCell]:
+        """
+        Get the grid cells as a list
+        """
+        return [GridCell(self.k, coord) for coord in self.grid_matrix]
