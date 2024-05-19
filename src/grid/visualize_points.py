@@ -1,29 +1,30 @@
 import matplotlib.pyplot as plt
 
-from src.grid.grid import GridCell
+from src.geometry.vector import V2_group
 
 
-def visualize_points(cell_list: list[GridCell]) -> None:
+def visualize_points(grid_cell_v: V2_group, k: float) -> None:
     """
     visualize points
     args:
-        cell_list: list[GridCell] - grid cell list
+        grid_cell_v: Gv - grid cell list
     """
     plt.figure(figsize=(10, 10))
     plt.axis("equal")
 
     cell_table: dict[str, int] = {}
 
-    for cell in cell_list:
-        x_lower = cell.x
-        y_lower = cell.y
-        x_upper = x_lower + cell.k
-        y_upper = y_lower + cell.k
+    for cell in grid_cell_v:
+        x_lower = cell[0]
+        y_lower = cell[1]
+        x_upper = x_lower + k
+        y_upper = y_lower + k
+        grid_id = f"{x_lower}_{y_lower}"
 
-        if cell.id not in cell_table:
-            cell_table[cell.id] = 1
+        if grid_id not in cell_table:
+            cell_table[grid_id] = 1
         else:
-            cell_table[cell.id] += 1
+            cell_table[grid_id] += 1
 
         plt.fill_between(
             [
@@ -32,8 +33,8 @@ def visualize_points(cell_list: list[GridCell]) -> None:
             ],
             y_lower,
             y_upper,
-            color="gray" if cell_table[cell.id] == 1 else "red",
-            alpha=0.5 if cell_table[cell.id] == 1 else 1,
+            color="gray" if cell_table[grid_id] == 1 else "red",
+            alpha=0.5 if cell_table[grid_id] == 1 else 1,
         )
 
     plt.show()
