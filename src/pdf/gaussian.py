@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -27,13 +28,16 @@ class GaussianDistribution:
     def pick_top5(self) -> np.float64:
         pt = np.percentile(self.sample, 95)
         after_five_percent = self.sample[self.sample > pt]
-
+        if len(after_five_percent) == 0:
+            return self.pick_max()
         return np.random.choice(after_five_percent)
 
     def pick_bottom5(self) -> np.float64:
         pt = np.percentile(self.sample, 5)
         before_five_percent = self.sample[self.sample < pt]
 
+        if len(before_five_percent) == 0:
+            return self.pick_min()
         return np.random.choice(before_five_percent)
 
     def confidence_range(self) -> tuple[np.float64, np.float64]:
@@ -46,3 +50,15 @@ class GaussianDistribution:
         self.mean = np.mean(sample)
         self.std = np.std(sample)
         self.n = len(sample)
+
+    def plot_distribution(
+        self, xlabel: str = "x", ylabel="y", title="pdf(Gaussian Distribution)"
+    ) -> None:
+
+        plt.hist(
+            self.sample, bins=50, density=True, alpha=0.6, color="g", edgecolor="green"
+        )
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.show()
