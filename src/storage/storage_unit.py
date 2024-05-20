@@ -78,7 +78,7 @@ class Storage(Generic[StorageValue]):
         """
         self._db[field] = value
 
-    def inquire(self, field: str) -> StorageValue:
+    def inquire(self, field: str) -> Union[StorageValue, None]:
         """
         Inquire the storage unit.
         """
