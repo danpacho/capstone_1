@@ -10,9 +10,9 @@ from src.storage.stochastic_storage import StochasticStorage
 
 
 @dataclass
-class ShapeParameter:
+class ShapeGeneParameter:
     """
-    ShapeParameter class
+    ShapeGeneParameter class
     """
 
     label: str
@@ -151,14 +151,6 @@ class ShapeGene(Gene):
         The pattern unit of the gene
     parameter_storage: Storage[dict[str, list[float]]]
         The storage for the gene parameters
-
-        Example:
-        ```json
-        {
-            DonutShape_1_r_inner: [1.0, 2.0, 3.0],
-            DonutShape_1_r_outer: [4.0, 5.0, 6.0]
-        }
-        ```
     """
 
     pdf_storage: StochasticStorage = StochasticStorage("__shape_gene_pdf")
@@ -174,7 +166,7 @@ class ShapeGene(Gene):
     }
     """
 
-    def __init__(self, shape_parameter: ShapeParameter, gene_id: str) -> None:
+    def __init__(self, shape_parameter: ShapeGeneParameter, gene_id: str) -> None:
         super().__init__(
             shape_parameter.label,
             gene_id,
@@ -205,7 +197,7 @@ class ShapeGene(Gene):
             parameter_info_array += f"{self.param.parameter_id_list[i]}: {parameter}, "
         parameter_info_array += "]"
 
-        return f"parameters: {parameter_info_array}"
+        print(f"parameter_list: {parameter_info_array}")
 
     @property
     def parameter_table(self) -> dict[str, float]:
@@ -250,7 +242,7 @@ class ShapeGene(Gene):
 
     def load_gene(self) -> None:
         # 1. Load parameters from the parameter storage
-        inquired = Gene.parameter_storage.inquire(self.label)
+        inquired = self.parameter_storage.inquire(self.label)
         self.parameter_list = (
             np.array(inquired, dtype=np.float64)
             if inquired
@@ -276,9 +268,6 @@ class ShapeGene(Gene):
         # 2. Remove parameters at the pdf
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
-
-        # 3. Remove the pattern unit
-        self.pattern_unit = None
 
     def mutate(
         self,
@@ -342,6 +331,11 @@ class ShapeGene(Gene):
     def mutate_at(
         self, method: Union[Literal["rand", "rand_gaussian", "avg", "top5"]], at: int
     ) -> None:
+        if at < 0 or at >= self.param.parameter_count:
+            raise ValueError(
+                "Mutation at value must be in the range of the parameter count"
+            )
+
         if method == "rand":
             new_parameter_list = self._mutate_random_at(at)
         elif method == "rand_gaussian":
@@ -381,9 +375,4 @@ class ShapeGene(Gene):
         return parameter_list
 
     def __repr__(self) -> str:
-        return f"ShapeGene({self.label}):" + "\n".join(
-            [
-                f"  {self.param.parameter_id_list[i]}: {self.parameter_list[i]}"
-                for i in range(len(self.param.parameter_id_list))
-            ]
-        )
+        return f"ShapeGene({self.label}, parameter_table={self.parameter_table})"
