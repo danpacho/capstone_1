@@ -1,6 +1,6 @@
 from math import ceil
 from typing import Callable, Literal, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -112,12 +112,19 @@ class PatternUnit:
 
 
 class Transformer:
+    """
+    Transformer class
+    """
+
     @staticmethod
     def translate_x(
-        T_matrix: Union[V2_group, V3_group],
+        matrix: Union[V2_group, V3_group],
         dx: float,
         is_3dim: bool = True,
     ) -> Union[V2_group, V3_group]:
+        """
+        Translate the matrix in x direction
+        """
         translated_points = [
             (
                 V.vec3(
@@ -131,16 +138,19 @@ class Transformer:
                     point[1],
                 )
             )
-            for point in T_matrix
+            for point in matrix
         ]
         return np.array(translated_points)
 
     @staticmethod
     def translate_y(
-        T_matrix: Union[V2_group, V3_group],
+        matrix: Union[V2_group, V3_group],
         dy: float,
         is_3dim: bool = True,
     ) -> Union[V2_group, V3_group]:
+        """
+        Translate the matrix in y direction
+        """
         translated_points = [
             (
                 V.vec3(
@@ -154,14 +164,17 @@ class Transformer:
                     point[1] + dy,
                 )
             )
-            for point in T_matrix
+            for point in matrix
         ]
         return np.array(translated_points)
 
     @staticmethod
     def rotate(
-        T_matrix: Union[V2_group, V3_group], angle: float, is_3dim: bool = True
+        matrix: Union[V2_group, V3_group], angle: float, is_3dim: bool = True
     ) -> Union[V2_group, V3_group]:
+        """
+        Rotate the matrix by angle `radian`
+        """
         rotated_points = [
             (
                 V.vec3(
@@ -175,16 +188,19 @@ class Transformer:
                     point[0] * np.sin(angle) + point[1] * np.cos(angle),
                 )
             )
-            for point in T_matrix
+            for point in matrix
         ]
 
         return np.array(rotated_points)
 
     @staticmethod
     def mirror_x(
-        T_matrix: Union[V2_group, V3_group],
+        matrix: Union[V2_group, V3_group],
         is_3dim: bool = True,
     ) -> Union[V2_group, V3_group]:
+        """
+        Mirror the matrix in x direction
+        """
         mirrored_points = [
             (
                 V.vec3(
@@ -198,15 +214,18 @@ class Transformer:
                     point[1],
                 )
             )
-            for point in T_matrix
+            for point in matrix
         ]
         return np.array(mirrored_points)
 
     @staticmethod
     def mirror_y(
-        T_matrix: Union[V2_group, V3_group],
+        matrix: Union[V2_group, V3_group],
         is_3dim: bool = True,
     ) -> Union[V2_group, V3_group]:
+        """
+        Mirror the matrix in y direction
+        """
         mirrored_points = [
             (
                 V.vec3(
@@ -220,13 +239,13 @@ class Transformer:
                     -point[1],
                 )
             )
-            for point in T_matrix
+            for point in matrix
         ]
         return np.array(mirrored_points)
 
     @staticmethod
     def transform_rt(
-        T_matrix: Union[V2_group, V3_group],
+        matrix: Union[V2_group, V3_group],
         dx: float,
         dy: float,
         angle: float,
@@ -237,7 +256,7 @@ class Transformer:
         """
         return Transformer.translate_y(
             Transformer.translate_x(
-                Transformer.rotate(T_matrix, angle, is_3dim), dx, is_3dim
+                Transformer.rotate(matrix, angle, is_3dim), dx, is_3dim
             ),
             dy,
             is_3dim,
@@ -253,61 +272,114 @@ class PatternTransformation:
 
     dx: float - translation in x direction
     dy: float - translation in y direction
-    phi: float - rotation angle
+    phi: float - rotation angle, `radian`
+    rot_count: int - rotation count, for corn pattern
+
+    DEFAULT_VALUE: int - default value for the attributes
     """
 
-    DEFAULT_VALUE: int = 0
+    DEFAULT_VALUE: Literal[0] = 0
 
     dx: float = DEFAULT_VALUE
     dy: float = DEFAULT_VALUE
     di: float = DEFAULT_VALUE
     phi: float = DEFAULT_VALUE
     rot_count: int = DEFAULT_VALUE
+    activated_params: list[str] = field(default_factory=list)
 
-    def is_safe_rotation(self, h: float) -> bool:
+    @property
+    def phi_angle(self) -> float:
         """
-        Check if the rotation is safe, via `min_phi` function
+        Get the rotation angle in `degree`
         """
-        if self.phi == self.DEFAULT_VALUE:
-            return True
+        return np.rad2deg(self.phi)
 
-        min_phi = self.min_phi(h)
-        print(f"min_phi: {min_phi}, Phi: {self.phi}")
-        return self.phi >= min_phi
+    def __post_init__(self):
+        self.activated_params = [
+            key for key, value in self.__dict__.items() if value != self.DEFAULT_VALUE
+        ]
+
+        if self.dx != self.DEFAULT_VALUE and self.phi != self.DEFAULT_VALUE:
+            if self.rot_count == self.DEFAULT_VALUE:
+                self.pattern_type = "circular"
+            else:
+                self.pattern_type = "corn"
+        else:
+            self.pattern_type = "grid"
 
     def min_phi(self, h: float) -> float:
         """
         Get the minimum rotation angle
         """
         if self.di == self.DEFAULT_VALUE:
-            return self.DEFAULT_VALUE
+            return self.DEFAULT_VALUE  # 0deg
         alpha = np.arctan(h / (2 * self.di))
         return np.arctan(2 * alpha)
 
-    # TODO: Refactor it with parameterized function f(t) = [x(t), y(t)]
-    @property
-    def pattern_type(
-        self,
-    ) -> Literal["circular", "grid", "corn"]:
+    def is_safe_rotation(self, h: float) -> bool:
         """
-        Determine the pattern type
+        Check if the rotation is safe, via `min_phi` function
         """
-        if (
-            self.dx != self.DEFAULT_VALUE
-            and self.phi != self.DEFAULT_VALUE
-            and self.rot_count == self.DEFAULT_VALUE
-        ):
-            return "circular"
+        # Rotation not activated
+        if self.phi == self.DEFAULT_VALUE:
+            return True
 
-        if (
-            self.dx != self.DEFAULT_VALUE
-            and self.phi != self.DEFAULT_VALUE
-            and self.rot_count != self.DEFAULT_VALUE
-        ):
-            return "corn"
+        # Rotation activated & di is 0 then it is collision
+        if self.di == self.DEFAULT_VALUE:
+            return False
 
-        if self.dx != self.DEFAULT_VALUE and self.dy != self.DEFAULT_VALUE:
-            return "grid"
+        return self.phi >= self.min_phi(h)
+
+    def fix_rotation(
+        self, h: float, safe_delta: float = 0.01, log: bool = False
+    ) -> None:
+        """
+        Fix the rotation angle, for geometrical collision situations
+        """
+        if self.is_safe_rotation(h):
+            return
+
+        # Fix invalid > di
+        if self.di == self.DEFAULT_VALUE:
+            if log:
+                print("[PatternTransformation]: Fixing di to 1")
+            self.di = 1
+
+        # Fix invalid > phi
+        min_phi = self.min_phi(h) + safe_delta
+
+        self.phi = min_phi
+        if log:
+            print(
+                f"[PatternTransformation]: Fixing rotation angle to {self.phi_angle} deg"
+            )
+
+    def is_safe_translation(self, safe_delta: float = 0.25) -> bool:
+        """
+        Check if the translation is safe, via `min_translation` function
+        """
+        if self.pattern_type == "grid":
+            return self.dx >= safe_delta and self.dy >= safe_delta
+
+        return self.dx >= safe_delta and self.di >= safe_delta
+
+    def fix_translation(self, safe_delta: float = 0.25, log: bool = False) -> None:
+        """
+        Fix the translation, for geometrical collision situations
+        """
+        if self.is_safe_translation(safe_delta):
+            return
+
+        if self.pattern_type == "grid":
+            if log:
+                print(f"[PatternTransformation]: Fixing translation to {safe_delta}")
+            self.dx = safe_delta
+            self.dy = safe_delta
+        else:
+            if log:
+                print(f"[PatternTransformation]: Fixing translation to {safe_delta}")
+            self.dx = safe_delta
+            self.di = safe_delta
 
     def __repr__(self) -> str:
         return f"PatternTransformation(dx={self.dx}, dy={self.dy}, phi={self.phi}, d={self.di})"
@@ -324,6 +396,8 @@ class PatternTransformationMatrix:
         The pattern transformation information
     pattern_bound: `tuple[tuple[float, float], tuple[float, float]]`
         The pattern bound, (x_min, x_max), (y_min, y_max)
+    auto_fix_collision: bool
+        If `True`, automatically fix the collision situation
     """
 
     def __init__(
@@ -331,12 +405,18 @@ class PatternTransformationMatrix:
         pattern_unit: PatternUnit,
         pattern_transformation: PatternTransformation,
         pattern_bound: tuple[tuple[float, float], tuple[float, float]],
+        auto_fix_collision: bool = True,
     ) -> None:
         self.pattern_unit = pattern_unit
         self.pattern_transformation = pattern_transformation
         self.pattern_bound = pattern_bound
+        self.auto_fix_collision = auto_fix_collision
 
-        self.p_step: float = pattern_unit.w + pattern_transformation.dx
+        # check collision
+        self.resolve_collision()
+
+        self.p_step_x: float = pattern_unit.w + pattern_transformation.dx
+        self.p_step_y: float = pattern_unit.h + pattern_transformation.dy
 
         self.T_matrix: V3_group = V.initialize_matrix_3d()
         self.generate_pattern_transformation_matrix()
@@ -365,6 +445,29 @@ class PatternTransformationMatrix:
     def p_bound_y_max(self) -> float:
         return self.p_bound_y[1]
 
+    def resolve_collision(self) -> None:
+        """
+        Resolve the rotation collision problem
+        """
+        if self.auto_fix_collision:
+            # Fix rotation
+            rotation_fix = ["circular", "corn"]
+            if self.pattern_transformation.pattern_type in rotation_fix:
+                self.pattern_transformation.fix_rotation(self.pattern_unit.h)
+
+            # Fix translation
+            self.pattern_transformation.fix_translation()
+
+        else:
+            if not self.pattern_transformation.is_safe_rotation(self.pattern_unit.h):
+                raise ValueError(
+                    f"[PatternTransformationMatrix] rotation angle is not safe, please fix the collision situation, min_phi: {self.pattern_transformation.min_phi(self.pattern_unit.h)} but phi: {self.pattern_transformation.phi}"
+                )
+            if not self.pattern_transformation.is_safe_translation():
+                raise ValueError(
+                    f"[PatternTransformationMatrix] translation distance is not safe, please fix the collision situation, dx: {self.pattern_transformation.dx}, dy: {self.pattern_transformation.dy}"
+                )
+
     def generate_pattern_transformation_matrix(self) -> None:
         """
         Generate the pattern transformation matrix
@@ -378,11 +481,11 @@ class PatternTransformationMatrix:
 
         base_step = self.pattern_unit.w / 2 + self.pattern_transformation.di
         positive_pattern_count = (
-            round((self.p_bound_x_max - base_step) // self.p_step) + 1
+            round((self.p_bound_x_max - base_step) // self.p_step_x) + 1
         )
 
         for i in range(positive_pattern_count):
-            dx = i * self.p_step + base_step
+            dx = i * self.p_step_x + base_step
             positive_dy = 0
             phi = 0
 
@@ -394,11 +497,6 @@ class PatternTransformationMatrix:
         T_translation = V.initialize_matrix_3d()
 
         if self.pattern_transformation.pattern_type == "circular":
-            if not self.pattern_transformation.is_safe_rotation(self.pattern_unit.h):
-                raise ValueError(
-                    "[ERROR] Rotation crash detected. Please check the rotation angle."
-                )
-
             rotation_group: list[float] = [
                 (i + 1) * self.pattern_transformation.phi
                 for i in range(int(2 * np.pi / self.pattern_transformation.phi) - 1)
@@ -409,10 +507,6 @@ class PatternTransformationMatrix:
                 T_rotation = V.combine_mat_v3(T_rotation, T_rotated)
 
         elif self.pattern_transformation.pattern_type == "corn":
-            if not self.pattern_transformation.is_safe_rotation(self.pattern_unit.h):
-                raise ValueError(
-                    "[ERROR] Rotation crash detected. Please check the rotation angle."
-                )
             corn_rotation_group: list[float] = []
             for i in range(round((self.pattern_transformation.rot_count) / 2)):
                 corn_rotation_group.extend(
@@ -432,16 +526,16 @@ class PatternTransformationMatrix:
                 T_x_positive, Transformer.mirror_x(T_x_positive)
             )
 
-            step_y = self.pattern_unit.h + self.pattern_transformation.dy
             grid_iter = (
-                ceil(((self.p_bound_y_max - self.p_bound_y_min) / 2) / step_y) - 1
+                ceil(((self.p_bound_y_max - self.p_bound_y_min) / 2) / self.p_step_y)
+                - 1
             )
             for i in range(grid_iter):
-                positive_dy = (i + 1) * step_y
-                negative_dy = -1 * (i + 1) * step_y
+                positive_dy = (i + 1) * self.p_step_y
                 T_translation = V.combine_mat_v3(
                     T_translation, Transformer.translate_y(T_x_positive, positive_dy)
                 )
+                negative_dy = -1 * (i + 1) * self.p_step_y
                 T_translation = V.combine_mat_v3(
                     T_translation, Transformer.translate_y(T_x_positive, negative_dy)
                 )
@@ -454,7 +548,7 @@ class PatternTransformationMatrix:
         self.T_matrix = T_matrix
 
     def __repr__(self) -> str:
-        return f"PatternTransformationVector(pattern_unit={self.pattern_unit}, pattern_transformation={self.pattern_transformation}, pattern_bound={self.pattern_bound})"
+        return f"PatternTransformationMatrix(pattern_unit={self.pattern_unit}, pattern_transformation={self.pattern_transformation}, pattern_bound={self.pattern_bound})"
 
 
 class Pattern:
