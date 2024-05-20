@@ -1,7 +1,7 @@
-import numpy as np
-
 from dataclasses import dataclass
 from typing import Callable, Literal, Union
+
+import numpy as np
 
 from src.geometry.vector import V2_group
 from src.geometry.pattern_unit import Shape, PatternUnit
@@ -343,39 +343,46 @@ class ShapeGene(Gene):
 
         self.parameter_list = avg_parameter_list
 
-    # TODO: 여기 밑에 다시 리팩토링
     def mutate_at(
         self, method: Union[Literal["rand", "rand_gaussian", "avg", "top5"]], at: int
     ) -> None:
         if method == "rand":
-            self._mutate_random_at(at)
+            new_parameter_list = self._mutate_random_at(at)
         elif method == "rand_gaussian":
-            self._mutate_gaussian_random_at(at)
+            new_parameter_list = self._mutate_gaussian_random_at(at)
         elif method == "avg":
-            self._mutate_avg_at(at)
+            new_parameter_list = self._mutate_avg_at(at)
         elif method == "top5":
-            self._mutate_top5_at(at)
+            new_parameter_list = self._mutate_top5_at(at)
+
+        self.update_gene(new_parameter_list)
 
         # Update the pattern unit
         self._update_pattern_unit()
 
-    def _mutate_random_at(self, at: int) -> None:
-        self.parameter_list[at] = self.get_rand_parameter_at(at)
+    def _mutate_random_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.get_rand_parameter_at(at)
+        return parameter_list
 
-    def _mutate_gaussian_random_at(self, at: int) -> None:
-        self.parameter_list[at] = self.pdf_storage.pick_random(
+    def _mutate_gaussian_random_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.pdf_storage.pick_random(
             self.param.parameter_id_list[at]
         )
+        return parameter_list
 
-    def _mutate_top5_at(self, at: int) -> None:
-        self.parameter_list[at] = self.pdf_storage.pick_top5(
+    def _mutate_top5_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.pdf_storage.pick_top5(
             self.param.parameter_id_list[at]
         )
+        return parameter_list
 
-    def _mutate_avg_at(self, at: int) -> None:
-        self.parameter_list[at] = self.pdf_storage.pick_avg(
-            self.param.parameter_id_list[at]
-        )
+    def _mutate_avg_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.pdf_storage.pick_avg(self.param.parameter_id_list[at])
+        return parameter_list
 
     def __repr__(self) -> str:
         return f"ShapeGene({self.label}):" + "\n".join(
