@@ -4,7 +4,7 @@ from typing import Callable, Any
 import numpy as np
 
 from src.pdf.gaussian import GaussianDistribution
-from src.storage.vector_storage import VectorStorage
+from src.storage.vector_storage import VectorSortedStorage
 
 
 def update_gaussian(func: Callable) -> Callable:
@@ -21,7 +21,7 @@ def update_gaussian(func: Callable) -> Callable:
     return wrapper
 
 
-class StochasticStorage(VectorStorage):
+class StochasticStorage(VectorSortedStorage):
     """
     Stochastic storage class.
     """
