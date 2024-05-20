@@ -1,9 +1,9 @@
-import numpy as np
-
 from abc import abstractmethod
 from copy import deepcopy
 
-from src.storage.vector_storage import VectorStorage
+import numpy as np
+
+from src.storage.storage_unit import Storage
 
 
 class Gene:
@@ -21,7 +21,7 @@ class Gene:
         The boundary of the parameters
     """
 
-    parameter_storage: VectorStorage = VectorStorage("__gene_parameters")
+    parameter_storage: Storage[list[float]] = Storage("__gene_parameters")
     """
     The storage for the gene parameters
 
