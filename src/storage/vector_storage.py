@@ -3,9 +3,13 @@ from src.ds.bst import BST
 from src.storage.storage_unit import Storage
 
 
-class VectorStorage(Storage[list[float]]):
+class VectorSortedStorage(Storage[list[float]]):
     """
-    VectorStorage for storing list[float] vector kinda data.
+    Sorted VectorStorage for storing list[float] vector kinda data.
+
+    Note:
+    - The data is stored in a sorted manner.
+    - If you want to preserve the order, then use `Storage` instead.
     """
 
     def __init__(self, root_filename: str, label: str = "VectorStorage"):
@@ -133,5 +137,5 @@ class VectorStorage(Storage[list[float]]):
             print(f"[{self.label}]: Field {field} does not exist.")
             return False
 
-        self._db[field].delete(value)
-        return True
+        deleted_node = self._db[field].delete(value)
+        return deleted_node is not None
