@@ -1,7 +1,8 @@
-import numpy as np
-
 from math import ceil
 from typing import Callable, Literal, Union
+from dataclasses import dataclass
+
+import numpy as np
 
 from src.geometry.vector import V, V2_group, V3_group
 from src.grid.grid import Grid
@@ -59,9 +60,12 @@ class PatternUnit:
         self.grid.generate_grid()
 
         self.shape_matrix: V2_group = V.initialize_matrix_2d()
-        self.generate_shape_points()
+        self.generate_shape_matrix()
 
-    def generate_shape_points(self, deduplicate: bool = True) -> None:
+    def generate_shape_matrix(self, deduplicate: bool = True) -> None:
+        """
+        Generate shape points
+        """
         # reset shape points
         self.shape_matrix: V2_group = V.initialize_matrix_2d()
 
@@ -80,12 +84,27 @@ class PatternUnit:
                     else:
                         self.shape_matrix = V.append_v2(self.shape_matrix, cell)
 
+    def update_area_functions(
+        self, area_functions: list[Callable[[float, float], bool]]
+    ) -> None:
+        """
+        Update the area functions and regenerate the shape matrix
+        """
+        self.shape.area_function = area_functions
+        self.generate_shape_matrix()
+
     @property
     def w(self) -> float:
+        """
+        width of the shape, `(-w/2, w/2)`
+        """
         return self.shape.bbox_x[1] - self.shape.bbox_x[0]
 
     @property
     def h(self) -> float:
+        """
+        height of the shape, `(-h/2, h/2)`
+        """
         return self.shape.bbox_y[1] - self.shape.bbox_y[0]
 
     def __repr__(self) -> str:
@@ -225,46 +244,44 @@ class Transformer:
         )
 
 
+@dataclass
 class PatternTransformation:
     """
     Pattern transformation information
 
-    Dx: float - translation in x direction
-    Dy: float - translation in y direction
-    Phi: float - rotation angle
+    di: float - distance from origin `(0, 0)`
 
-    Od: float - distance from origin `(0, 0)`
+    dx: float - translation in x direction
+    dy: float - translation in y direction
+    phi: float - rotation angle
     """
 
-    default = 0
+    DEFAULT_VALUE: int = 0
 
-    def __init__(
-        self,
-        Dx: float = default,
-        Dy: float = default,
-        Phi: float = default,
-        Rotate_count: int = default,
-        Od: float = default,
-    ) -> None:
-        self.Dx = Dx
-        self.Dy = Dy
-        self.Phi = Phi
-        self.Rotate_count = Rotate_count
-        self.Od = Od
+    dx: float = DEFAULT_VALUE
+    dy: float = DEFAULT_VALUE
+    di: float = DEFAULT_VALUE
+    phi: float = DEFAULT_VALUE
+    rot_count: int = DEFAULT_VALUE
 
     def is_safe_rotation(self, h: float) -> bool:
-        if self.Phi == self.default:
+        """
+        Check if the rotation is safe, via `min_phi` function
+        """
+        if self.phi == self.DEFAULT_VALUE:
             return True
 
-        alpha = np.arctan(h / (2 * self.Od))
-        min_phi = np.arctan(2 * alpha)
-        print(f"min_phi: {min_phi}, Phi: {self.Phi}")
-        return self.Phi >= min_phi
+        min_phi = self.min_phi(h)
+        print(f"min_phi: {min_phi}, Phi: {self.phi}")
+        return self.phi >= min_phi
 
     def min_phi(self, h: float) -> float:
-        if self.Od == self.default:
-            return self.default
-        alpha = np.arctan(h / (2 * self.Od))
+        """
+        Get the minimum rotation angle
+        """
+        if self.di == self.DEFAULT_VALUE:
+            return self.DEFAULT_VALUE
+        alpha = np.arctan(h / (2 * self.di))
         return np.arctan(2 * alpha)
 
     # TODO: Refactor it with parameterized function f(t) = [x(t), y(t)]
@@ -276,29 +293,37 @@ class PatternTransformation:
         Determine the pattern type
         """
         if (
-            self.Dx != self.default
-            and self.Phi != self.default
-            and self.Rotate_count == self.default
+            self.dx != self.DEFAULT_VALUE
+            and self.phi != self.DEFAULT_VALUE
+            and self.rot_count == self.DEFAULT_VALUE
         ):
             return "circular"
 
         if (
-            self.Dx != self.default
-            and self.Phi != self.default
-            and self.Rotate_count != self.default
+            self.dx != self.DEFAULT_VALUE
+            and self.phi != self.DEFAULT_VALUE
+            and self.rot_count != self.DEFAULT_VALUE
         ):
             return "corn"
 
-        if self.Dx != self.default and self.Dy != self.default:
+        if self.dx != self.DEFAULT_VALUE and self.dy != self.DEFAULT_VALUE:
             return "grid"
 
     def __repr__(self) -> str:
-        return f"PatternTransformation(dx={self.Dx}, dy={self.Dy}, phi={self.Phi}, d={self.Od})"
+        return f"PatternTransformation(dx={self.dx}, dy={self.dy}, phi={self.phi}, d={self.di})"
 
 
-class PatternTransformationVector:
+class PatternTransformationMatrix:
     """
-    Pattern transformation vector
+    Pattern transformation matrix group T
+
+    Attributes:
+    pattern_unit: `PatternUnit`
+        The pattern unit, shape
+    pattern_transformation: `PatternTransformation`
+        The pattern transformation information
+    pattern_bound: `tuple[tuple[float, float], tuple[float, float]]`
+        The pattern bound, (x_min, x_max), (y_min, y_max)
     """
 
     def __init__(
@@ -311,10 +336,10 @@ class PatternTransformationVector:
         self.pattern_transformation = pattern_transformation
         self.pattern_bound = pattern_bound
 
-        self.Step: float = pattern_unit.w + pattern_transformation.Dx
+        self.p_step: float = pattern_unit.w + pattern_transformation.dx
 
         self.T_matrix: V3_group = V.initialize_matrix_3d()
-        self.generate_pattern_origin_vector()
+        self.generate_pattern_transformation_matrix()
 
     @property
     def p_bound_x(self) -> tuple[float, float]:
@@ -340,19 +365,24 @@ class PatternTransformationVector:
     def p_bound_y_max(self) -> float:
         return self.p_bound_y[1]
 
-    def generate_pattern_origin_vector(self) -> None:
+    def generate_pattern_transformation_matrix(self) -> None:
+        """
+        Generate the pattern transformation matrix
+        - `3D` matrix, where each row is a transformation vector `t_i = [dx_i, dy_i, phi_i]`
+        - Generated based on the `PatternTransformation` information
+        """
         T_matrix = V.initialize_matrix_3d()
 
         # linear transformation (for x > 0)
         T_x_positive = V.initialize_matrix_3d()
 
-        base_step = self.pattern_unit.w / 2 + self.pattern_transformation.Od
+        base_step = self.pattern_unit.w / 2 + self.pattern_transformation.di
         positive_pattern_count = (
-            round((self.p_bound_x_max - base_step) // self.Step) + 1
+            round((self.p_bound_x_max - base_step) // self.p_step) + 1
         )
 
         for i in range(positive_pattern_count):
-            dx = i * self.Step + base_step
+            dx = i * self.p_step + base_step
             positive_dy = 0
             phi = 0
 
@@ -370,8 +400,8 @@ class PatternTransformationVector:
                 )
 
             rotation_group: list[float] = [
-                (i + 1) * self.pattern_transformation.Phi
-                for i in range(int(2 * np.pi / self.pattern_transformation.Phi) - 1)
+                (i + 1) * self.pattern_transformation.phi
+                for i in range(int(2 * np.pi / self.pattern_transformation.phi) - 1)
             ]
             for angle in rotation_group:
                 T_rotated = Transformer.rotate(T_x_positive, angle)
@@ -384,11 +414,11 @@ class PatternTransformationVector:
                     "[ERROR] Rotation crash detected. Please check the rotation angle."
                 )
             corn_rotation_group: list[float] = []
-            for i in range(round((self.pattern_transformation.Rotate_count) / 2)):
+            for i in range(round((self.pattern_transformation.rot_count) / 2)):
                 corn_rotation_group.extend(
                     [
-                        (i + 1) * self.pattern_transformation.Phi,
-                        -1 * (i + 1) * self.pattern_transformation.Phi,
+                        (i + 1) * self.pattern_transformation.phi,
+                        -1 * (i + 1) * self.pattern_transformation.phi,
                     ]
                 )
             for angle in corn_rotation_group:
@@ -402,7 +432,7 @@ class PatternTransformationVector:
                 T_x_positive, Transformer.mirror_x(T_x_positive)
             )
 
-            step_y = self.pattern_unit.h + self.pattern_transformation.Dy
+            step_y = self.pattern_unit.h + self.pattern_transformation.dy
             grid_iter = (
                 ceil(((self.p_bound_y_max - self.p_bound_y_min) / 2) / step_y) - 1
             )
@@ -430,20 +460,36 @@ class PatternTransformationVector:
 class Pattern:
     """
     Pattern class
+
+    Attributes:
+    pattern_unit: `PatternUnit`
+        The pattern unit, shape
+    pattern_transformation_vector: `PatternTransformationMatrix`
+        The pattern transformation matrix group T
     """
 
     def __init__(
         self,
         pattern_unit: PatternUnit,
-        pattern_transformation_vector: PatternTransformationVector,
+        pattern_transformation_vector: PatternTransformationMatrix,
     ) -> None:
         self.pattern_unit = pattern_unit
         self.pattern_transformation_vector = pattern_transformation_vector
 
         self.pattern_matrix: V2_group = V.initialize_matrix_2d()
-        self.generate_pattern_vector()
+        self.generate_pattern_matrix()
 
-    def generate_pattern_vector(self) -> None:
+    def generate_pattern_matrix(self) -> None:
+        """
+        Generate the pattern matrix
+        1. pattern_unit's `2D` matrix, where each row is a point `p_i = [x_i, y_i]`
+        2. pattern_transformation_matrix's `3D` matrix,
+        where each row is a transformation vector `t_i = [dx_i, dy_i, phi_i]`
+
+        Returns:
+            Pattern is generated by applying the transformation matrix group `T`
+            to the `pattern unit`'s shape matrix
+        """
         self.pattern_matrix = V.initialize_matrix_2d()
 
         for T_vec in self.pattern_transformation_vector.T_matrix:
