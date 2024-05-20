@@ -1,11 +1,11 @@
 import os
 import unittest
-from src.storage.vector_storage import VectorStorage
+from src.storage.vector_storage import VectorSortedStorage
 
 
 class TestVectorStorage(unittest.TestCase):
     def setUp(self):
-        self.storage = VectorStorage("test_vector_storage")
+        self.storage = VectorSortedStorage("test_vector_storage")
 
     def tearDown(self):
         os.remove(self.storage.root_path)
