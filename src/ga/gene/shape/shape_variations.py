@@ -1,8 +1,10 @@
-from src.ga.gene.shape.shape_gene import ShapeParameter
+from src.ga.gene.shape.shape_gene import ShapeGeneParameter
 
-donut_params = ShapeParameter(
+bbox = (10, 10, 0.25)
+
+donut_params = ShapeGeneParameter(
     label="DonutShape",
-    bbox=(10, 10, 0.25),
+    bbox=bbox,
     a_f=[
         lambda p, params: (p[0] ** 2 + p[1] ** 2) >= params[0]
         and (p[0] ** 2 + p[1] ** 2) <= params[1],
@@ -13,10 +15,9 @@ donut_params = ShapeParameter(
     # 2 <= r_inner <= 6, 7 <= r_outer <= 10
 )
 
-# TODO: This is weird behavior for storing parameters at pdf
-trapezoid = ShapeParameter(
+trapezoid_params = ShapeGeneParameter(
     label="Trapezoid",
-    bbox=(10, 10, 0.25),
+    bbox=bbox,
     a_f=[
         lambda p, params: p[1]
         <= ((params[1] - params[0]) / 10 * (p[0] - 5) + params[1])
@@ -27,7 +28,7 @@ trapezoid = ShapeParameter(
     parameter_boundary_list=[(2, 5), (1, 5)],
 )
 
-circle_params = ShapeParameter(
+circle_params = ShapeGeneParameter(
     label="CircleShape",
     bbox=(12.5, 12.5, 0.25),
     a_f=[
@@ -39,9 +40,9 @@ circle_params = ShapeParameter(
     # 2 <= r <= 5
 )
 
-triangle_params = ShapeParameter(
+triangle_params = ShapeGeneParameter(
     label="TriangleShape",
-    bbox=(10, 10, 0.25),
+    bbox=bbox,
     a_f=[
         lambda p, params: p[0] >= 0 and p[1] >= 0 and p[0] + p[1] <= params[0],
         # x >= 0 and y >= 0 and x + y <= l
@@ -51,9 +52,9 @@ triangle_params = ShapeParameter(
     # 2 <= l <= 10
 )
 
-wing_params = ShapeParameter(
+wing_params = ShapeGeneParameter(
     label="WingShape",
-    bbox=(10, 10, 0.25),
+    bbox=bbox,
     a_f=[
         lambda p, params: p[1] >= p[0] ** 2 - params[0]
         and p[1] <= -p[0] ** 2 + params[0],
@@ -63,9 +64,9 @@ wing_params = ShapeParameter(
     parameter_boundary_list=[(2, 5)],
 )
 
-hole_params = ShapeParameter(
+hole_params = ShapeGeneParameter(
     label="HoldShape",
-    bbox=(10, 10, 0.25),
+    bbox=bbox,
     a_f=[lambda p, params: (p[0] ** 2 + p[1] ** 2) >= params[0]],
     parameter_id_list=["hole_r"],
     parameter_boundary_list=[(2, 4)],
