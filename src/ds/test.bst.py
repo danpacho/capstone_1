@@ -44,7 +44,13 @@ def test_bst():
 
     assert bst.tolist == []
 
-    print("BST test passed.")
+    bst.insert_list(
+        [10.61620435657074, 8.212382613056526, 9.81005460203026, 10.776345974211374]
+    )
+    assert bst.search(8.212382613056526).key == 8.212382613056526
+
+    bst.delete(10.776345974211374)
+    print(bst.tolist, bst.list_inquire)
 
 
 test_bst()
