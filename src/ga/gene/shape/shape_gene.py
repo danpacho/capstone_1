@@ -167,7 +167,7 @@ class ShapeGene(Gene):
 
     Example:
     ```json
-    # db.json
+    # __shape_gene_pdf.json
     {
         "r_inner": [1.1, 0.2, 1.4, 12, 5.5, 6.6, ...],
         "r_outer": [2.2, 0.3, 2.5, 13, 6.5, 7.6, ...]
@@ -225,27 +225,22 @@ class ShapeGene(Gene):
         }
 
     def _update_pattern_unit(self) -> None:
-        self.pattern_unit = PatternUnit(
-            Shape(
-                self.param.w,
-                self.param.h,
-                self.param.get_a_f_with_params(self.parameter_list),
-            ),
-            self.param.k,
+        self.pattern_unit.update_area_functions(
+            area_functions=self.param.get_a_f_with_params(self.parameter_list)
         )
 
     def update_gene(self, new_parameter_list: np.ndarray[np.float64]) -> None:
         # Assume that parameter_list is already updated by `mutate` or `mutate_at`
-        prev_list: list[float] = self.parameter_list.tolist()
-        curr_list: list[float] = new_parameter_list.tolist()
+        prev_parameter_list: list[float] = self.parameter_list.tolist()
+        curr_parameter_list: list[float] = new_parameter_list.tolist()
         # 1. Replace parameter list at the parameter storage
-        self.parameter_storage.insert_field(self.label, curr_list)
+        self.parameter_storage.insert_field(self.label, curr_parameter_list)
         # 2. Remove prev and add new parameters at the pdf
         for i, param_id in enumerate(self.param.parameter_id_list):
-            # Delete the old parameter list
-            self.pdf_storage.delete_single(param_id, prev_list[i])
-            # Insert the new parameter list
-            self.pdf_storage.insert_single(param_id, curr_list[i])
+            # 2.1 Delete the old parameter list
+            self.pdf_storage.delete_single(param_id, prev_parameter_list[i])
+            # 2.2 Insert the new parameter list
+            self.pdf_storage.insert_single(param_id, curr_parameter_list[i])
 
         # 3. Update the parameter list
         self.parameter_list = new_parameter_list
@@ -254,7 +249,7 @@ class ShapeGene(Gene):
         self._update_pattern_unit()
 
     def load_gene(self) -> None:
-        # Load parameters from the parameter storage
+        # 1. Load parameters from the parameter storage
         inquired = Gene.parameter_storage.inquire(self.label)
         self.parameter_list = (
             np.array(inquired, dtype=np.float64)
@@ -262,26 +257,27 @@ class ShapeGene(Gene):
             else np.zeros(self.param.parameter_count, dtype=np.float64)
         )
 
-        # Insert the gene if it does not exist
+        # 2. Insert the gene if it does not exist
         if inquired is None:
-            # 1. Insert the gene to the parameter storage
+            # 2.1. Insert the gene to the parameter storage
             self.parameter_storage.insert_field(
                 self.label, self.parameter_list.tolist()
             )
-            # 2. Insert the gene to the pdf storage
+            # 2.2. Insert the gene to the pdf storage
             for i, param_id in enumerate(self.param.parameter_id_list):
                 self.pdf_storage.insert_single(param_id, self.parameter_list[i])
 
+        # 3. Update the pattern unit
         self._update_pattern_unit()
 
     def remove_gene(self) -> None:
-        # Remove the gene information
+        # 1. Remove the gene information
         self.parameter_storage.delete_field(self.label)
-        # Remove parameters at the pdf
+        # 2. Remove parameters at the pdf
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
 
-        # Remove the pattern unit
+        # 3. Remove the pattern unit
         self.pattern_unit = None
 
     def mutate(
