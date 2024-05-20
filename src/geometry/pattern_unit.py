@@ -1,6 +1,6 @@
-from math import ceil
+from math import ceil, floor
 from typing import Callable, Literal, Union
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -96,14 +96,14 @@ class PatternUnit:
     @property
     def w(self) -> float:
         """
-        width of the shape, `(-w/2, w/2)`
+        width of the shape
         """
         return self.shape.bbox_x[1] - self.shape.bbox_x[0]
 
     @property
     def h(self) -> float:
         """
-        height of the shape, `(-h/2, h/2)`
+        height of the shape
         """
         return self.shape.bbox_y[1] - self.shape.bbox_y[0]
 
@@ -278,6 +278,8 @@ class PatternTransformation:
     DEFAULT_VALUE: int - default value for the attributes
     """
 
+    pattern_type: Union[Literal["grid", "circular", "corn"]]
+
     DEFAULT_VALUE: Literal[0] = 0
 
     dx: float = DEFAULT_VALUE
@@ -285,7 +287,6 @@ class PatternTransformation:
     di: float = DEFAULT_VALUE
     phi: float = DEFAULT_VALUE
     rot_count: int = DEFAULT_VALUE
-    activated_params: list[str] = field(default_factory=list)
 
     @property
     def phi_angle(self) -> float:
@@ -293,19 +294,6 @@ class PatternTransformation:
         Get the rotation angle in `degree`
         """
         return np.rad2deg(self.phi)
-
-    def __post_init__(self):
-        self.activated_params = [
-            key for key, value in self.__dict__.items() if value != self.DEFAULT_VALUE
-        ]
-
-        if self.dx != self.DEFAULT_VALUE and self.phi != self.DEFAULT_VALUE:
-            if self.rot_count == self.DEFAULT_VALUE:
-                self.pattern_type = "circular"
-            else:
-                self.pattern_type = "corn"
-        else:
-            self.pattern_type = "grid"
 
     def min_phi(self, h: float) -> float:
         """
@@ -329,6 +317,21 @@ class PatternTransformation:
             return False
 
         return self.phi >= self.min_phi(h)
+
+    def fix_rotation_count(self, log: bool = False) -> None:
+        """
+        Fix the rotation count, for geometrical collision situations
+        """
+        if self.rot_count == self.DEFAULT_VALUE:
+            return
+
+        max_rotated = self.phi * self.rot_count
+        if max_rotated >= np.pi:
+            self.rot_count = floor(np.pi / self.phi)
+            if log:
+                print(
+                    f"[PatternTransformation]: Fixing rotation count to {self.rot_count}"
+                )
 
     def fix_rotation(
         self, h: float, safe_delta: float = 0.01, log: bool = False
@@ -455,6 +458,10 @@ class PatternTransformationMatrix:
             if self.pattern_transformation.pattern_type in rotation_fix:
                 self.pattern_transformation.fix_rotation(self.pattern_unit.h)
 
+            # Fix rotation count
+            if self.pattern_transformation.pattern_type == "corn":
+                self.pattern_transformation.fix_rotation_count()
+
             # Fix translation
             self.pattern_transformation.fix_translation()
 
@@ -556,19 +563,15 @@ class Pattern:
     Pattern class
 
     Attributes:
-    pattern_unit: `PatternUnit`
-        The pattern unit, shape
     pattern_transformation_vector: `PatternTransformationMatrix`
         The pattern transformation matrix group T
     """
 
     def __init__(
         self,
-        pattern_unit: PatternUnit,
-        pattern_transformation_vector: PatternTransformationMatrix,
+        pattern_transformation_matrix: PatternTransformationMatrix,
     ) -> None:
-        self.pattern_unit = pattern_unit
-        self.pattern_transformation_vector = pattern_transformation_vector
+        self.pattern_transformation_matrix = pattern_transformation_matrix
 
         self.pattern_matrix: V2_group = V.initialize_matrix_2d()
         self.generate_pattern_matrix()
@@ -586,7 +589,7 @@ class Pattern:
         """
         self.pattern_matrix = V.initialize_matrix_2d()
 
-        for T_vec in self.pattern_transformation_vector.T_matrix:
+        for T_vec in self.pattern_transformation_matrix.T_matrix:
             transformed_t_vec = Grid.discretize_points(
                 Transformer.transform_rt(
                     self.pattern_unit.shape_matrix,
@@ -600,3 +603,10 @@ class Pattern:
             self.pattern_matrix = V.combine_mat_v2(
                 self.pattern_matrix, transformed_t_vec
             )
+
+    @property
+    def pattern_unit(self) -> PatternUnit:
+        """
+        Get the pattern unit
+        """
+        return self.pattern_transformation_matrix.pattern_unit
