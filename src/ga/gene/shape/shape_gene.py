@@ -49,7 +49,7 @@ class ShapeParameter:
 
     Example:
     ```python
-    parameter_ld_list = ["r_inner", "r_outer"]
+    parameter_id_list = ["r_inner", "r_outer"]
     ```
     """
     parameter_boundary_list: list[tuple[float, float]]
