@@ -385,7 +385,7 @@ class PatternTransformation:
             self.di = safe_delta
 
     def __repr__(self) -> str:
-        return f"PatternTransformation(dx={self.dx}, dy={self.dy}, phi={self.phi}, d={self.di})"
+        return f"PatternTransformation(dx={self.dx}, dy={self.dy}, di={self.di}, phi={self.phi}, rot_count={self.rot_count})"
 
 
 class PatternTransformationMatrix:
@@ -456,11 +456,11 @@ class PatternTransformationMatrix:
             # Fix rotation
             rotation_fix = ["circular", "corn"]
             if self.pattern_transformation.pattern_type in rotation_fix:
-                self.pattern_transformation.fix_rotation(self.pattern_unit.h)
+                self.pattern_transformation.fix_rotation(self.pattern_unit.h, True)
 
             # Fix rotation count
             if self.pattern_transformation.pattern_type == "corn":
-                self.pattern_transformation.fix_rotation_count()
+                self.pattern_transformation.fix_rotation_count(True)
 
             # Fix translation
             self.pattern_transformation.fix_translation()
@@ -504,6 +504,7 @@ class PatternTransformationMatrix:
         T_translation = V.initialize_matrix_3d()
 
         if self.pattern_transformation.pattern_type == "circular":
+            print(f"circular phi_angle: {self.pattern_transformation.phi_angle}")
             rotation_group: list[float] = [
                 (i + 1) * self.pattern_transformation.phi
                 for i in range(int(2 * np.pi / self.pattern_transformation.phi) - 1)
