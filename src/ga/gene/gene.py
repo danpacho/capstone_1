@@ -13,7 +13,7 @@ class Gene:
     Attributes:
     label: str
         The label of the gene, unique to the gene
-    gene_id: uuid
+    gene_id: str
         The unique identifier of the gene, unique to the gene should be manually provided
     parameters: np.ndarray[np.float64]
         The parameters of the gene
@@ -52,6 +52,19 @@ class Gene:
         self.parameter_list: np.ndarray[np.float64] = np.zeros(
             parameter_count, dtype=np.float64
         )
+
+    def update_gene_id(self, gene_id: str) -> None:
+        """
+        Updates the gene ID
+
+        Warning:
+            - It may cause data loss at store, do not manually change it.
+            - It should be modified by the `Chromosome` class
+        """
+        self.remove_gene()
+
+        self.gene_id = gene_id
+        self.label = f"{self.label}_{self.gene_id}"
 
     @abstractmethod
     def print_parameter_info(self) -> None:
@@ -107,6 +120,13 @@ class Gene:
         Args:
         method: str
             The mutation method to use, e.g. `"random", "gaussian", "top5", "avg"`
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_mutate_methods(self) -> list[str]:
+        """
+        Returns the mutation methods
         """
         raise NotImplementedError
 
