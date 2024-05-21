@@ -71,7 +71,7 @@ class PatternGeneParameter:
     def update_transformation_params(
         self,
         transformation: Tuple[float, float, float, float, int],
-    ) -> None:
+    ) -> dict[str, float]:
         """
         Update the transformation parameters
 
@@ -87,29 +87,30 @@ class PatternGeneParameter:
 
         if self.pattern_type == "grid_strict":
             # Fix to half of the dx for fitting perfectly
-            self.transformation.dx = dx
-            self.transformation.dy = dy
-            self.transformation.di = dx / 2
+            di = dx / 2
 
         elif self.pattern_type == "circular_strict":
-            self.transformation.dx = dx
-            self.transformation.di = di
-
             if phi == 0:
-                self.transformation.phi = 0
-                return
+                phi = 0
 
             rotation_count = floor(2 * pi / phi)
 
             modified_phi: float = 2 * pi / rotation_count
-            self.transformation.phi = modified_phi
+            phi = modified_phi
 
-        else:
-            self.transformation.dx = dx
-            self.transformation.dy = dy
-            self.transformation.di = di
-            self.transformation.phi = phi
-            self.transformation.rot_count = rot_count
+        self.transformation.di = di
+        self.transformation.dx = dx
+        self.transformation.dy = dy
+        self.transformation.phi = phi
+        self.transformation.rot_count = rot_count
+
+        return {
+            "di": self.transformation.di,
+            "dx": self.transformation.dx,
+            "dy": self.transformation.dy,
+            "phi": self.transformation.phi,
+            "rot_count": self.transformation.rot_count,
+        }
 
     @property
     def parameter_count(self) -> int:
@@ -161,22 +162,44 @@ class PatternGene(Gene):
         """
         return self.param.transformation
 
-    def _update_transformation(self) -> None:
+    def _get_fixed_transformation(
+        self, new_parameter_list: np.ndarray[np.float64]
+    ) -> np.ndarray[np.float64]:
+        """
+        Fix the transformation parameters with pattern type
+        1. modify the transformation object permanently
+        2. return the fixed transformation parameter list
+        """
         # (di, dx, dy, phi, rot_count)
         ordered_params: list[float] = [0] * 5
         for i, param_id in enumerate(self.param.parameter_id_list):
             if param_id == "di":
-                ordered_params[0] = self.parameter_list[i]
+                ordered_params[0] = new_parameter_list[i]
             elif param_id == "dx":
-                ordered_params[1] = self.parameter_list[i]
+                ordered_params[1] = new_parameter_list[i]
             elif param_id == "dy":
-                ordered_params[2] = self.parameter_list[i]
+                ordered_params[2] = new_parameter_list[i]
             elif param_id == "phi":
-                ordered_params[3] = self.parameter_list[i]
+                ordered_params[3] = new_parameter_list[i]
             elif param_id == "rot_count":
-                ordered_params[4] = self.parameter_list[i]
+                ordered_params[4] = new_parameter_list[i]
 
-        self.param.update_transformation_params(ordered_params)
+        self.param.update_transformation_params(tuple(ordered_params))
+
+        fixed_parameter_list = np.zeros(self.parameter_count, dtype=np.float64)
+        for i, param_id in enumerate(self.param.parameter_id_list):
+            if param_id == "di":
+                fixed_parameter_list[i] = self.param.transformation.di
+            elif param_id == "dx":
+                fixed_parameter_list[i] = self.param.transformation.dx
+            elif param_id == "dy":
+                fixed_parameter_list[i] = self.param.transformation.dy
+            elif param_id == "phi":
+                fixed_parameter_list[i] = self.param.transformation.phi
+            elif param_id == "rot_count":
+                fixed_parameter_list[i] = self.param.transformation.rot_count
+
+        return fixed_parameter_list
 
     def print_parameter_info(self) -> None:
         parameter_info_array = "[ "
@@ -208,6 +231,9 @@ class PatternGene(Gene):
         }
 
     def update_gene(self, new_parameter_list: np.ndarray[np.float64]) -> None:
+        # 0. Get the fixed transformation
+        new_parameter_list = self._get_fixed_transformation(new_parameter_list)
+
         # Assume that parameter_list is already updated by `mutate` or `mutate_at`
         prev_parameter_list: list[float] = self.parameter_list.tolist()
         curr_parameter_list: list[float] = new_parameter_list.tolist()
@@ -230,15 +256,12 @@ class PatternGene(Gene):
         # 3. Update the parameter list
         self.parameter_list = new_parameter_list
 
-        # 4. Update the transformation
-        self._update_transformation()
-
     def load_gene(self) -> None:
         # 1. Load the gene from the parameter storage
         # Node that inquired is sorted in the order of the parameter_id_list
         inquired = self.parameter_storage.inquire(self.label)
         self.parameter_list = (
-            np.array(inquired, dtype=np.float64)
+            self._get_fixed_transformation(np.array(inquired, dtype=np.float64))
             if inquired
             else np.zeros(self.parameter_count, dtype=np.float64)
         )
@@ -253,15 +276,17 @@ class PatternGene(Gene):
             for i, param_id in enumerate(self.param.parameter_id_list):
                 self.pdf_storage.insert_single(param_id, self.parameter_list[i])
 
-        # 3. Update the transformation
-        self._update_transformation()
-
     def remove_gene(self) -> None:
         # 1. Remove the gene from the parameter storage
         self.parameter_storage.delete_field(self.label)
         # 2. Remove the gene from the pdf storage
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
+
+    def get_mutate_methods(
+        self,
+    ) -> list[Literal["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]]:
+        return ["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]
 
     def mutate(
         self,
