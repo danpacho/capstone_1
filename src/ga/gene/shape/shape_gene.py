@@ -269,6 +269,11 @@ class ShapeGene(Gene):
         for i, param_id in enumerate(self.param.parameter_id_list):
             self.pdf_storage.delete_single(param_id, self.parameter_list[i])
 
+    def get_mutate_methods(
+        self,
+    ) -> list[Literal["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]]:
+        return ["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]
+
     def mutate(
         self,
         method: Union[
