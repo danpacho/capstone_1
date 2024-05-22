@@ -10,22 +10,22 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
 
     def __init__(
         self,
-        min_criteria_value_list: list[float],
-        effective_criteria_list: list[float],
-        criteria_weight_list: list[float],
+        min_criteria_value_list: tuple[float, float, float],
+        effective_criteria_list: tuple[float, float, float],
+        criteria_weight_list: tuple[float, float, float],
     ):
         """
         Args:
-            min_criteria_value_list (`list[float]`): Minimum criteria values
-            effective_criteria_list (`list[float]`): Effective criteria values
-            criteria_weight_list (`list[float]`): Criteria weights
+            min_criteria_value_list: Minimum criteria values, `("drag", "max_temp", "avg_temp")`
+            effective_criteria_list: Effective criteria values, `("drag", "max_temp", "avg_temp")`
+            criteria_weight_list: Criteria weights, `("drag", "max_temp", "avg_temp")`
         """
         super().__init__(
             fitness_method_name="GPR",
             criteria_label_list=["drag", "max_temp", "avg_temp"],
-            min_criteria_value_list=min_criteria_value_list,
-            effective_criteria_list=effective_criteria_list,
-            criteria_weight_list=criteria_weight_list,
+            min_criteria_value_list=list(min_criteria_value_list),
+            effective_criteria_list=list(effective_criteria_list),
+            criteria_weight_list=list(criteria_weight_list),
         )
 
     def calculate(self, chromosome) -> list[float]:
