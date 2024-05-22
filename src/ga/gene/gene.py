@@ -40,6 +40,7 @@ class Gene:
         label: str,
         gene_id: str,
         parameter_count: int,
+        parameter_id_list: list[str],
         parameter_boundary_list: list[tuple[float, float]],
     ) -> None:
 
@@ -49,6 +50,7 @@ class Gene:
 
         self.parameter_boundary_list = parameter_boundary_list
         self.parameter_count = parameter_count
+        self.parameter_id_list = parameter_id_list
         self.parameter_list: np.ndarray[np.float64] = np.zeros(
             parameter_count, dtype=np.float64
         )
@@ -62,6 +64,8 @@ class Gene:
             - It should be modified by the `Chromosome` class
         """
         self.remove_gene()
+
+        self.label = self.label.removesuffix(f"_{self.gene_id}")
 
         self.gene_id = gene_id
         self.label = f"{self.label}_{self.gene_id}"
