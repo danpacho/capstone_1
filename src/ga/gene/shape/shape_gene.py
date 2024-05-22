@@ -171,6 +171,7 @@ class ShapeGene(Gene):
             shape_parameter.label,
             gene_id,
             shape_parameter.parameter_count,
+            shape_parameter.parameter_id_list,
             shape_parameter.parameter_boundary_list,
         )
 
@@ -282,22 +283,24 @@ class ShapeGene(Gene):
     ) -> None:
 
         if method == "rand":
-            self.update_gene(self._mutate_random())
+            new_parameter_list = self._mutate_random()
         elif method == "rand_gaussian":
-            self.update_gene(self._mutate_gaussian_random())
+            new_parameter_list = self._mutate_rand_gaussian()
         elif method == "avg":
-            self.update_gene(self._mutate_avg())
+            new_parameter_list = self._mutate_avg()
         elif method == "top5":
-            self.update_gene(self._mutate_top5())
+            new_parameter_list = self._mutate_top5()
         elif method == "bottom5":
-            self.update_gene(self._mutate_bottom5())
+            new_parameter_list = self._mutate_bottom5()
         elif method == "preserve":
-            pass
+            return
+
+        self.update_gene(new_parameter_list)
 
     def _mutate_random(self) -> np.ndarray[np.float64]:
         return self.get_rand_parameter_list()
 
-    def _mutate_gaussian_random(self) -> np.ndarray[np.float64]:
+    def _mutate_rand_gaussian(self) -> np.ndarray[np.float64]:
         gaussian_parameter_list: np.ndarray[np.float64] = np.zeros(
             self.param.parameter_count, dtype=np.float64
         )
@@ -331,10 +334,12 @@ class ShapeGene(Gene):
         for i, param_id in enumerate(self.param.parameter_id_list):
             avg_parameter_list[i] = self.pdf_storage.pick_avg(param_id)
 
-        self.parameter_list = avg_parameter_list
+        return avg_parameter_list
 
     def mutate_at(
-        self, method: Union[Literal["rand", "rand_gaussian", "avg", "top5"]], at: int
+        self,
+        method: Union[Literal["rand", "rand_gaussian", "avg", "top5", "bottom5"]],
+        at: int,
     ) -> None:
         if at < 0 or at >= self.param.parameter_count:
             raise ValueError(
@@ -344,11 +349,15 @@ class ShapeGene(Gene):
         if method == "rand":
             new_parameter_list = self._mutate_random_at(at)
         elif method == "rand_gaussian":
-            new_parameter_list = self._mutate_gaussian_random_at(at)
+            new_parameter_list = self._mutate_rand_gaussian_at(at)
         elif method == "avg":
             new_parameter_list = self._mutate_avg_at(at)
         elif method == "top5":
             new_parameter_list = self._mutate_top5_at(at)
+        elif method == "bottom5":
+            new_parameter_list = self._mutate_bottom5_at(at)
+        elif method == "preserve":
+            return
 
         self.update_gene(new_parameter_list)
 
@@ -360,7 +369,7 @@ class ShapeGene(Gene):
         parameter_list[at] = self.get_rand_parameter_at(at)
         return parameter_list
 
-    def _mutate_gaussian_random_at(self, at: int) -> np.ndarray[np.float64]:
+    def _mutate_rand_gaussian_at(self, at: int) -> np.ndarray[np.float64]:
         parameter_list = self.parameter_list.copy()
         parameter_list[at] = self.pdf_storage.pick_random(
             self.param.parameter_id_list[at]
@@ -370,6 +379,13 @@ class ShapeGene(Gene):
     def _mutate_top5_at(self, at: int) -> np.ndarray[np.float64]:
         parameter_list = self.parameter_list.copy()
         parameter_list[at] = self.pdf_storage.pick_top5(
+            self.param.parameter_id_list[at]
+        )
+        return parameter_list
+
+    def _mutate_bottom5_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.pdf_storage.pick_bottom5(
             self.param.parameter_id_list[at]
         )
         return parameter_list
