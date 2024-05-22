@@ -147,6 +147,7 @@ class PatternGene(Gene):
             label=gene_parameter.label,
             gene_id=gene_id,
             parameter_count=gene_parameter.parameter_count,
+            parameter_id_list=gene_parameter.parameter_id_list,
             parameter_boundary_list=gene_parameter.parameter_boundary_list,
         )
 
@@ -306,7 +307,7 @@ class PatternGene(Gene):
         elif method == "bottom5":
             new_parameter_list = self._mutate_bottom5()
         elif method == "preserve":
-            pass
+            return
 
         self.update_gene(new_parameter_list)
 
@@ -349,7 +350,13 @@ class PatternGene(Gene):
 
         return avg_parameter_list
 
-    def mutate_at(self, method: str, at: int) -> None:
+    def mutate_at(
+        self,
+        method: Union[
+            Literal["rand", "rand_gaussian", "avg", "top5", "bottom5", "preserve"]
+        ],
+        at: int,
+    ) -> None:
         if at < 0 or at >= self.parameter_count:
             raise ValueError(
                 "Mutation at value must be in the range of the parameter count"
@@ -363,6 +370,10 @@ class PatternGene(Gene):
             new_parameter_list = self._mutate_avg_at(at)
         elif method == "top5":
             new_parameter_list = self._mutate_top5_at(at)
+        elif method == "bottom5":
+            new_parameter_list = self._mutate_bottom5_at(at)
+        elif method == "preserve":
+            return
 
         self.update_gene(new_parameter_list)
 
@@ -381,6 +392,13 @@ class PatternGene(Gene):
     def _mutate_top5_at(self, at: int) -> np.ndarray[np.float64]:
         parameter_list = self.parameter_list.copy()
         parameter_list[at] = self.pdf_storage.pick_top5(
+            self.param.parameter_id_list[at]
+        )
+        return parameter_list
+
+    def _mutate_bottom5_at(self, at: int) -> np.ndarray[np.float64]:
+        parameter_list = self.parameter_list.copy()
+        parameter_list[at] = self.pdf_storage.pick_bottom5(
             self.param.parameter_id_list[at]
         )
         return parameter_list
