@@ -3,6 +3,7 @@ from typing import Generic, TypeVar, Union
 
 import numpy as np
 
+from src.ga.p4_crossover.crossover_behavior import CrossoverBehavior
 from src.ga.gene.gene import Gene
 
 ChromosomeGene = TypeVar("ChromosomeGene", bound=tuple[Gene, ...])
@@ -41,54 +42,108 @@ class Chromosome(Generic[ChromosomeGene]):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def crossover_gene_params(self, other_chromosome: "Chromosome") -> "Chromosome":
+    def crossover_gene_params(
+        self, behavior: CrossoverBehavior, other_chromosome: "Chromosome"
+    ) -> dict[int, np.ndarray[np.float64]]:
         """
         Crosses over the chromosome with another chromosome
 
-        Args:
-            other_chromosome (`Chromosome`): The other chromosome to crossover with
-
         Returns:
-            `Chromosome`: The new chromosome created from the crossover
+            `dict[int, np.ndarray[np.float64]]`: The new chromosome created from the crossover
+        Examples:
+        ```python
+        {
+            0: [0.324, 0.123, 0.234], # Gene1
+            1: [1.8994, 1.3894032]    # Gene2
+        }
+        ```
         """
-        raise NotImplementedError
+        crossover_result: dict[int, np.ndarray[np.float64]] = {}
+        for index, gene in enumerate(self.gene_tuple):
+            crossover_result[index] = behavior.crossover(
+                gene.parameter_list, other_chromosome.gene_tuple[index].parameter_list
+            )
 
-    def crossover(self, other: "Chromosome") -> "Chromosome":
+        return crossover_result
+
+    def _update_gene_parameters(
+        self,
+        new_chromosome: "Chromosome[tuple[Gene, ...]]",
+        updated_gene_parameters: dict[int, np.ndarray[np.float64]],
+    ):
+        for i, gene in enumerate(new_chromosome.gene_tuple):
+            gene.update_gene(updated_gene_parameters[i])
+
+    def crossover(
+        self,
+        behavior: CrossoverBehavior,
+        other: "Chromosome[tuple[Gene, ...]]",
+    ) -> "Chromosome[tuple[Gene, ...]]":
         """
         Crossover the chromosome with another chromosome
         """
-        base_crossover = self.crossover_genes(other)
+        child_chromosome: "Chromosome[tuple[Gene, ...]]" = self.crossover_genes(other)
 
-        if self.is_gene_parameter_crossover_possible(base_crossover):
-            base_crossover = self.crossover_gene_params(base_crossover)
+        if self.is_gene_parameter_crossover_possible(child_chromosome):
+            crossover_gene_params = self.crossover_gene_params(
+                behavior, child_chromosome
+            )
+            self._update_gene_parameters(
+                child_chromosome,
+                crossover_gene_params,
+            )
 
-        return base_crossover
+        return child_chromosome
 
     @abstractmethod
-    def mutate_genes(self) -> "Chromosome":
+    def mutate_genes(self) -> None:
         """
         Mutates the chromosome
-
-        Returns:
-            `Chromosome`: The new chromosome after mutation
         """
         raise NotImplementedError
 
     @property
-    def gene_parameter_table(self):
+    def gene_parameter_table(self) -> dict[str, np.ndarray[np.float64]]:
         """
         Returns a dictionary of gene parameters
 
         Example:
         ```python
         {
-            "gene1": [0.324, 0.123, 0.234],
-            "gene2": [1.8994, 1.3894032]
+            "gene1": np.array([0.324, 0.123, 0.234]),
+            "gene2": np.array([1.8994, 1.3894032])
         }
         ```
         """
         return {gene.label: gene.parameter_list for gene in self.gene_tuple}
+
+    @property
+    def gene_parameter_id(self) -> dict[str, set[str]]:
+        """
+        Returns a dictionary of gene parameter IDs
+
+        Example:
+        ```python
+        {
+            "gene1": {"param1", "param2", "param3"},
+            "gene2": {"param4", "param5"}
+        }
+        """
+        return {gene.label: set(gene.parameter_id_list) for gene in self.gene_tuple}
+
+    @property
+    def gene_parameter_id_set(self) -> list[set[str]]:
+        """
+        Returns a set of gene parameter IDs
+
+        Example:
+        ```python
+        [
+            {"param1", "param2", "param3"},
+            {"param4", "param5"}
+        ]
+        """
+        return [set(gene.parameter_id_list) for gene in self.gene_tuple]
 
     @property
     def gene_parameter(self) -> list[np.ndarray[np.float64]]:
@@ -123,16 +178,19 @@ class Chromosome(Generic[ChromosomeGene]):
 
         return self.gene_tuple[at]
 
-    def is_gene_parameter_crossover_possible(self, other: "Chromosome") -> bool:
+    def is_gene_parameter_crossover_possible(
+        self,
+        other: "Chromosome[tuple[Gene, ...]]",
+    ) -> bool:
         """
-        Check if the gene parameters of the chromosome
-        and the other chromosome are compatible for crossover
+        Check whether gene parameter is same or not
+        """
+        if len(self.gene_tuple) != len(other.gene_tuple):
+            return False
 
-        If possible, then it can be crossover deeply, otherwise, it can be crossover shallowly
-        """
-        for i, curr_params in enumerate(self.gene_parameter):
-            other_params = other.gene_parameter[i]
-            if curr_params.shape != other_params.shape:
+        # Compare gene parameter id
+        for i, param_set in enumerate(self.gene_parameter_id_set):
+            if param_set != other.gene_parameter_id_set[i]:
                 return False
 
         return True
