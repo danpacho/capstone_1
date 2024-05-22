@@ -54,7 +54,7 @@ class Storage(Generic[StorageValue]):
                 The field to delete.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Field {field} does not exist.")
+            print(f"[{self.label}]: Delete failed, field {field} does not exist.")
             return
 
         del self._db[field]
@@ -83,7 +83,7 @@ class Storage(Generic[StorageValue]):
         Inquire the storage unit.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Field {field} does not exist.")
+            print(f"[{self.label}]: Inquire failed, field {field} does not exist.")
             return None
         return self._db[field]
 
