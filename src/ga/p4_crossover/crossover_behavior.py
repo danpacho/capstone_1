@@ -4,7 +4,9 @@ import numpy as np
 
 
 class CrossoverBehavior:
-    """ """
+    """
+    CrossoverBehavior class
+    """
 
     def __init__(self, method_name: str):
         self.method_name = method_name
