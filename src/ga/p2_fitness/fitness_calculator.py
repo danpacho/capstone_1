@@ -4,10 +4,10 @@ from typing import Generic, TypeVar
 from src.ga.chromosome.chromosome import Chromosome
 
 
-FitnessTargetChromosome = TypeVar("FitnessTargetChromosome", bound=Chromosome)
+ChromosomeType = TypeVar("ChromosomeType", bound=Chromosome)
 
 
-class FitnessCalculator(Generic[FitnessTargetChromosome]):
+class FitnessCalculator(Generic[ChromosomeType]):
     """
     FitnessCalculator class
     """
@@ -35,21 +35,21 @@ class FitnessCalculator(Generic[FitnessTargetChromosome]):
         self.criteria_weight_list = criteria_weight_list
 
     @abstractmethod
-    def calculate(self, chromosome: FitnessTargetChromosome) -> list[float]:
+    def calculate(self, chromosome: ChromosomeType) -> list[float]:
         """
         Calculate the fitness value of the chromosome
 
         Args:
-            chromosome (`FitnessTargetChromosome`): Chromosome to calculate the fitness value
+            chromosome (`ChromosomeType`): Chromosome to calculate the fitness value
         """
         raise NotImplementedError
 
-    def judge_fitness(self, chromosome: FitnessTargetChromosome) -> tuple[bool, float]:
+    def judge_fitness(self, chromosome: ChromosomeType) -> tuple[bool, float]:
         """
         Judge the fitness of the chromosome
 
         Args:
-            chromosome (`FitnessTargetChromosome`): Chromosome to judge the criteria values
+            chromosome (`ChromosomeType`): Chromosome to judge the criteria values
         Returns:
             `tuple[bool, float, float]`: (Fitness success flag and Fitness score and Biased fitness score)
         Example:
