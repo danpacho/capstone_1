@@ -29,7 +29,7 @@ class PopulationStorage:
     ```
     """
 
-    def __init__(self, root_filename_tuple: tuple[str, str, str]):
+    def __init__(self, root_filename_tuple: tuple[str, str]):
         """
         Args:
             root_filename: root filenames for (`population`, `population fitness`) storage.
