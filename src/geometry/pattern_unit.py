@@ -334,7 +334,7 @@ class PatternTransformation:
                 )
 
     def fix_rotation(
-        self, h: float, safe_delta: float = 0.01, log: bool = False
+        self, h: float, safe_delta: float = 0.025, log: bool = False
     ) -> None:
         """
         Fix the rotation angle, for geometrical collision situations
@@ -357,7 +357,7 @@ class PatternTransformation:
                 f"[PatternTransformation]: Fixing rotation angle to {self.phi_angle} deg"
             )
 
-    def is_safe_translation(self, safe_delta: float = 0.25) -> bool:
+    def is_safe_translation(self, safe_delta: float = 1) -> bool:
         """
         Check if the translation is safe, via `min_translation` function
         """
@@ -366,7 +366,7 @@ class PatternTransformation:
 
         return self.dx >= safe_delta and self.di >= safe_delta
 
-    def fix_translation(self, safe_delta: float = 0.25, log: bool = False) -> None:
+    def fix_translation(self, safe_delta: float = 1, log: bool = False) -> None:
         """
         Fix the translation, for geometrical collision situations
         """
@@ -504,7 +504,6 @@ class PatternTransformationMatrix:
         T_translation = V.initialize_matrix_3d()
 
         if self.pattern_transformation.pattern_type == "circular":
-            print(f"circular phi_angle: {self.pattern_transformation.phi_angle}")
             rotation_group: list[float] = [
                 (i + 1) * self.pattern_transformation.phi
                 for i in range(int(2 * np.pi / self.pattern_transformation.phi) - 1)
@@ -589,6 +588,7 @@ class Pattern:
             to the `pattern unit`'s shape matrix
         """
         self.pattern_matrix = V.initialize_matrix_2d()
+        t_id_set: set[str] = set()
 
         for T_vec in self.pattern_transformation_matrix.T_matrix:
             transformed_t_vec = Grid.discretize_points(
@@ -601,9 +601,14 @@ class Pattern:
                 ),
                 self.pattern_unit.grid.k,
             )
-            self.pattern_matrix = V.combine_mat_v2(
-                self.pattern_matrix, transformed_t_vec
-            )
+            t_id = f"{transformed_t_vec[0]}_{transformed_t_vec[1]}"
+
+            # Remove duplicated transformation
+            if t_id not in t_id_set:
+                t_id_set.add(t_id)
+                self.pattern_matrix = V.combine_mat_v2(
+                    self.pattern_matrix, transformed_t_vec
+                )
 
     @property
     def pattern_unit(self) -> PatternUnit:
