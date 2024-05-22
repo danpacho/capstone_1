@@ -9,7 +9,7 @@ from src.ga.gene.shape.shape_gene import ShapeGene, ShapeGeneParameter
 from src.ga.chromosome.vent_hole import VentHole
 
 
-class VentInitializer(PopularizationInitializer):
+class VentInitializer(PopularizationInitializer[VentHole]):
     """
     VentInitializer class
     """
@@ -58,6 +58,8 @@ class VentInitializer(PopularizationInitializer):
         self._save_storage()
 
         self._initialize_chromosome_by_genes()
+
+        return self.vent_chromosome_list
 
     def _initialize_gene_by_random(self) -> None:
         for i in range(self.population_size):
