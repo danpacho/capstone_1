@@ -20,7 +20,7 @@ def donut_params(scale: int) -> ShapeGeneParameter:
 def trapezoid_params(scale: int) -> ShapeGeneParameter:
     bbox = (10 * scale, 10 * scale, scale / 2)
     return ShapeGeneParameter(
-        label="Trapezoid",
+        label="TrapezoidShape",
         bbox=bbox,
         a_f=[
             lambda p, params: p[1]
@@ -81,7 +81,7 @@ def wing_params(scale: int) -> ShapeGeneParameter:
 def hole_params(scale: int) -> ShapeGeneParameter:
     bbox = (10 * scale, 10 * scale, scale / 2)
     return ShapeGeneParameter(
-        label="HoldShape",
+        label="HoleShape",
         bbox=bbox,
         a_f=[lambda p, params: (p[0] ** 2 + p[1] ** 2) >= params[0]],
         parameter_id_list=["hole_r"],
