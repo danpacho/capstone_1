@@ -21,7 +21,7 @@ class Gene:
         The boundary of the parameters
     """
 
-    parameter_storage: Storage[list[float]] = Storage("__gene_parameters")
+    parameter_storage: Storage[list[float]] = Storage("store/gene_parameters")
     """
     The storage for the gene parameters
 
