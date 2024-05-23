@@ -14,18 +14,27 @@ class GaussianDistribution:
         return self.sample.tolist()
 
     def pick_rand(self) -> np.float64:
+        if len(self.sample) == 0:
+            return 0.0
         return np.random.choice(self.sample)
 
     def pick_avg(self) -> np.float64:
         return self.mean
 
     def pick_max(self) -> np.float64:
+        if len(self.sample) == 0:
+            return 0.0
         return np.max(self.sample)
 
     def pick_min(self) -> np.float64:
+        if len(self.sample) == 0:
+            return 0.0
         return np.min(self.sample)
 
     def pick_top5(self) -> np.float64:
+        if len(self.sample) == 0:
+            return 0.0
+
         pt = np.percentile(self.sample, 95)
         after_five_percent = self.sample[self.sample > pt]
         if len(after_five_percent) == 0:
@@ -33,6 +42,9 @@ class GaussianDistribution:
         return np.random.choice(after_five_percent)
 
     def pick_bottom5(self) -> np.float64:
+        if len(self.sample) == 0:
+            return 0.0
+
         pt = np.percentile(self.sample, 5)
         before_five_percent = self.sample[self.sample < pt]
 
