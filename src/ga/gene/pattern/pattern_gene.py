@@ -125,7 +125,7 @@ class PatternGene(Gene):
     PatternGene class
     """
 
-    pdf_storage: StochasticStorage = StochasticStorage("__pattern_gene_pdf")
+    pdf_storage: StochasticStorage = StochasticStorage("store/pattern_gene_pdf")
     """
     The storage for the gene parameters pdf
 
