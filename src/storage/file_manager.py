@@ -31,6 +31,10 @@ class JSONFileManager(FileManager):
         print(f"[{self.label}]: Root path updated to {self.root_path}")
 
     def create(self, data: dict):
+        if not os.path.exists(os.path.dirname(self.root_path)):
+            os.makedirs(os.path.dirname(self.root_path))
+            print(f"[{self.label}]: Directory created for {self.root_path}")
+
         self.save_json(data)
 
     def update(self, data: dict):
@@ -56,4 +60,5 @@ class JSONFileManager(FileManager):
     def save_json(self, data: dict):
         with open(self.root_path, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
+
         print(f"[{self.label}]: JSON data saved to {self.root_path}")
