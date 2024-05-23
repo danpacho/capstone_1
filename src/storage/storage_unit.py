@@ -17,10 +17,11 @@ class Storage(Generic[StorageValue]):
             The root path of the storage unit.
     """
 
-    def __init__(self, root_filename: str, label: str = "Storage"):
+    def __init__(self, root_filename: str, label: str = "Storage", log: bool = False):
         root = os.path.join(os.getcwd(), root_filename + ".json")
         self.root_path = root
         self.label = label
+        self.log = log
         self._io = JSONFileManager(root_path=self.root_path, label=label)
         self._io.load_json()
         self._db: dict[str, StorageValue] = self._io.load_json()
@@ -54,7 +55,8 @@ class Storage(Generic[StorageValue]):
                 The field to delete.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Delete failed, field {field} does not exist.")
+            if self.log:
+                print(f"[{self.label}]: Delete failed, field {field} does not exist.")
             return
 
         del self._db[field]
@@ -83,7 +85,8 @@ class Storage(Generic[StorageValue]):
         Inquire the storage unit.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Inquire failed, field {field} does not exist.")
+            if self.log:
+                print(f"[{self.label}]: Inquire failed, field {field} does not exist.")
             return None
         return self._db[field]
 
