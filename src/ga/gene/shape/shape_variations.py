@@ -1,8 +1,8 @@
 from src.ga.gene.shape.shape_gene import ShapeGeneParameter
 
 
-def donut_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def donut_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="DonutShape",
         bbox=bbox,
@@ -17,8 +17,8 @@ def donut_params(scale: int) -> ShapeGeneParameter:
     )
 
 
-def trapezoid_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def trapezoid_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="TrapezoidShape",
         bbox=bbox,
@@ -33,8 +33,8 @@ def trapezoid_params(scale: int) -> ShapeGeneParameter:
     )
 
 
-def circle_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def circle_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="CircleShape",
         bbox=bbox,
@@ -48,8 +48,8 @@ def circle_params(scale: int) -> ShapeGeneParameter:
     )
 
 
-def triangle_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def triangle_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="TriangleShape",
         bbox=bbox,
@@ -63,8 +63,8 @@ def triangle_params(scale: int) -> ShapeGeneParameter:
     )
 
 
-def wing_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def wing_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="WingShape",
         bbox=bbox,
@@ -78,8 +78,8 @@ def wing_params(scale: int) -> ShapeGeneParameter:
     )
 
 
-def hole_params(scale: int) -> ShapeGeneParameter:
-    bbox = (10 * scale, 10 * scale, scale / 2)
+def hole_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
     return ShapeGeneParameter(
         label="HoleShape",
         bbox=bbox,
