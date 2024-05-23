@@ -89,7 +89,8 @@ class VectorSortedStorage(Storage[list[float]]):
         Inquire field
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Inquired failed, field {field} does not exist.")
+            if self.log:
+                print(f"[{self.label}]: Inquired failed, field {field} does not exist.")
             return None
         return self._db[field].tolist
 
@@ -102,7 +103,8 @@ class VectorSortedStorage(Storage[list[float]]):
                 The field to delete.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Delete failed, field {field} does not exist.")
+            if self.log:
+                print(f"[{self.label}]: Delete failed, field {field} does not exist.")
             return
 
         del self._db[field]
@@ -118,7 +120,10 @@ class VectorSortedStorage(Storage[list[float]]):
                 The list to delete.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Delete list failed, field {field} does not exist.")
+            if self.log:
+                print(
+                    f"[{self.label}]: Delete list failed, field {field} does not exist."
+                )
             return
 
         self._db[field].delete_list(value)
@@ -134,7 +139,8 @@ class VectorSortedStorage(Storage[list[float]]):
                 The value to delete.
         """
         if not self.check_field_exist(field):
-            print(f"[{self.label}]: Delete single failed, {field} does not exist.")
+            if self.log:
+                print(f"[{self.label}]: Delete single failed, {field} does not exist.")
             return False
 
         deleted_node = self._db[field].delete(value)
