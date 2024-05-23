@@ -17,10 +17,11 @@ class VentInitializer(PopularizationInitializer[VentHole]):
     def __init__(
         self,
         population_size: int,
-        shape_gene_pool: list[Callable[[int], ShapeGeneParameter]],
+        shape_gene_pool: list[Callable[[int, float], ShapeGeneParameter]],
         pattern_gene_pool: list[Callable[[int], PatternGeneParameter]],
         grid_scale: int,
         pattern_bound: tuple[tuple[float, float], tuple[float, float]],
+        grid_resolution: float = 2.0,
     ):
         """
         Args:
@@ -29,6 +30,7 @@ class VentInitializer(PopularizationInitializer[VentHole]):
             pattern_gene_pool (`list[Callable[[int], PatternGeneParameter]`): The list of pattern gene pool
             grid_scale (`int`): The grid scale
             pattern_bound (`tuple[tuple[float, float], tuple[float, float]]`): The pattern bound
+            grid_resolution (`int`, optional): The grid resolution. Defaults to 2. Meaning the grid is divided by 2.
         """
         super().__init__(population_size)
 
@@ -40,6 +42,8 @@ class VentInitializer(PopularizationInitializer[VentHole]):
         self.vent_chromosome_list: list[VentHole] = []
 
         self.grid_scale = grid_scale
+        self.grid_resolution = grid_resolution
+
         self.pattern_bound = (
             (pattern_bound[0][0] * grid_scale, pattern_bound[0][1] * grid_scale),
             (pattern_bound[1][0] * grid_scale, pattern_bound[1][1] * grid_scale),
@@ -66,7 +70,9 @@ class VentInitializer(PopularizationInitializer[VentHole]):
             shape_rand_index = randint(0, len(self.shape_gene_pool) - 1)
             shape_gene = ShapeGene(
                 gene_id=i,
-                shape_parameter=self.shape_gene_pool[shape_rand_index](self.grid_scale),
+                shape_parameter=self.shape_gene_pool[shape_rand_index](
+                    self.grid_scale, self.grid_resolution
+                ),
             )
             shape_gene.mutate("rand")
 
