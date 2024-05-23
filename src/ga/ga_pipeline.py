@@ -94,7 +94,7 @@ class GAPipeline(Generic[ChromosomeType]):
         self._should_stop: bool = False
         self._mutation_count: int = 0
 
-        self._pre_initialize()
+        self._reset()
 
     @property
     def suite_info(self) -> dict[str, str]:
@@ -137,12 +137,22 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         return self._generation
 
-    def _pre_initialize(self):
+    def _reset(self) -> None:
+        """
+        Reset the pipeline
+        """
         self.evolution_storage.reset()
         self.population_storage.reset()
         Gene.parameter_storage.reset()
 
         self._generation = 0
+        self._population = []
+
+    def _pre_initialize(self):
+        """
+        Pre initialize operations
+        """
+        self._reset()
         self._population: list[ChromosomeType] = (
             self.population_initializer.initialize()
         )
@@ -202,12 +212,15 @@ class GAPipeline(Generic[ChromosomeType]):
                 chromosome.mutate_genes()
                 self._mutation_count += 1
 
-    def _generation_runner(self):
+    def _run_generation(self):
         # Phase 1: Reset population for next generation
         self.population_storage.reset()
 
         # Phase 2: Fitness Calculation
         self._fitness_calculation()
+        if self._should_stop:
+            print("Extraordinary chromosome found, stopping the evolution")
+            return
 
         # Phase 3: Selection
         self._population = self.selector_behavior.select(
@@ -223,24 +236,25 @@ class GAPipeline(Generic[ChromosomeType]):
         # Phase 6: Increment generation
         self._generation += 1
 
-    def _log_result(self):
+    def _log_result(self, title: str):
         """
         Log the suite information
         """
-        print("-" * 50)
+        print("-" * 100)
+        print(f"{title}")
         for key, value in self.suite_info.items():
             print(f"{key.capitalize()}: {value}")
-        print("-" * 50)
+        print("-" * 100)
 
     def _log_generation(self):
         """
         Log the generation information
         """
-        print("-" * 50)
+        print("-" * 100)
         print(
-            f"> Generation: {self._generation}, Population: {self.population_count}, Should Stop: {self._should_stop}"
+            f">> Generation: {self._generation}, Population: {self.population_count}, Should Stop: {self._should_stop}"
         )
-        print("-" * 50)
+        print("-" * 100)
 
     def _record_generation(self):
         """
@@ -254,7 +268,7 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         Run the genetic algorithm pipeline
         """
-        self._log_result()
+        self._log_result("GA started")
 
         self._pre_initialize()
 
@@ -264,11 +278,9 @@ class GAPipeline(Generic[ChromosomeType]):
             and self.population_count >= self.suite_min_population
         ):
             self._log_generation()
-
-            self._generation_runner()
-
+            self._run_generation()
             self._record_generation()
 
-        self._log_result()
-
         self._post_exit()
+
+        self._log_result("GA finished")
