@@ -101,12 +101,14 @@ class PopulationStorage:
 
         return fitness[0], fitness[1]
 
+    @property
     def population_size(self) -> int:
         """
         Return the population size
         """
         return self.population_storage.size
 
+    @property
     def population_labels(self) -> list[str]:
         """
         Return the population labels
