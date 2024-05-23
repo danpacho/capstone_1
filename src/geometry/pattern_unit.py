@@ -456,11 +456,11 @@ class PatternTransformationMatrix:
             # Fix rotation
             rotation_fix = ["circular", "corn"]
             if self.pattern_transformation.pattern_type in rotation_fix:
-                self.pattern_transformation.fix_rotation(self.pattern_unit.h, True)
+                self.pattern_transformation.fix_rotation(self.pattern_unit.h, False)
 
             # Fix rotation count
             if self.pattern_transformation.pattern_type == "corn":
-                self.pattern_transformation.fix_rotation_count(True)
+                self.pattern_transformation.fix_rotation_count(False)
 
             # Fix translation
             self.pattern_transformation.fix_translation()
