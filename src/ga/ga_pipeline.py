@@ -161,7 +161,22 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         Post exit operations
         """
-        return
+        final_result: list[tuple[float, float]] = []
+        for chromosome in self._population:
+            result = self.population_storage.inquire_chromosome(chromosome)
+            if result is None:
+                print(
+                    f"Error: chromosome {chromosome.label} not found in the population"
+                )
+                continue
+            final_result.append(result)
+
+        self.population_storage.reset()
+
+        for i, result in enumerate(final_result):
+            self.population_storage.insert_chromosome(self._population[i], result)
+
+        self.population_storage.save()
 
     def _fitness_calculation(self):
         fitness_success_chromosomes: list[ChromosomeType] = []
@@ -241,7 +256,9 @@ class GAPipeline(Generic[ChromosomeType]):
         Log the suite information
         """
         print("-" * 100)
-        print(f"{title}")
+        print(f">> {title}")
+        print("-" * 100)
+
         for key, value in self.suite_info.items():
             print(f"{key.capitalize()}: {value}")
         print("-" * 100)
