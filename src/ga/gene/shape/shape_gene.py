@@ -153,7 +153,7 @@ class ShapeGene(Gene):
         The storage for the gene parameters
     """
 
-    pdf_storage: StochasticStorage = StochasticStorage("__shape_gene_pdf")
+    pdf_storage: StochasticStorage = StochasticStorage("store/shape_gene_pdf")
     """
     The storage for the gene parameters pdf
 
