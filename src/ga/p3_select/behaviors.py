@@ -67,8 +67,8 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
     ):
         super().__init__("RouletteWheelSelection")
         self.roulette_type = roulette_type
-        self.pointer_count = roulette_pointer_count
-        self.roulette_count = running_count
+        self.roulette_pointer_count = roulette_pointer_count
+        self.running_count = running_count
 
         self._is_roulette_initialized = False
         self._fitness_roulette_wheel: np.ndarray[np.float64] = np.array([])
@@ -77,6 +77,9 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
         """
         Generate the roulette wheel for the fitness and biased fitness distribution
         """
+        # Reset the roulette wheel
+        self._fitness_roulette_wheel = np.array([])
+
         fitness_sum = np.sum(population_info.fitness_distribution)
         cumulative_fitness = 0.0
         for fitness in population_info.fitness_distribution:
@@ -85,42 +88,45 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
                 self._fitness_roulette_wheel, cumulative_fitness
             )
 
-        self._is_roulette_initialized = True
-
     def select(self, population, population_info):
-        if not self._is_roulette_initialized:
-            self.generate_roulette_wheel(population_info)
+        self.generate_roulette_wheel(population_info)
 
         selected_population: list[Chromosome] = []
 
         count = (
-            self.roulette_count
-            if self.roulette_count is not None
-            else population_info.population_size // self.pointer_count
+            self.running_count
+            if self.running_count is not None
+            else population_info.population_size // self.roulette_pointer_count
         )
-        for _ in range(count):
-            total_fitness = np.sum(population_info.fitness_distribution)
 
+        for _ in range(count):
             if self.roulette_type == "random":
-                for _ in range(self.pointer_count):
-                    pointer = np.random.uniform(0, total_fitness)
+                for _ in range(self.roulette_pointer_count):
+                    pointer = np.random.uniform(0, 1)
                     index = self._select_chromosome(
                         pointer, self._fitness_roulette_wheel
                     )
                     selected_population.append(population[index])
 
             else:
-                pointer_distance: float = total_fitness / self.pointer_count
+                pointer_distance: float = 1 / self.roulette_pointer_count
                 start_point = np.random.uniform(0, pointer_distance)
                 pointers: list[float] = [
-                    start_point + i * pointer_distance
-                    for i in range(self.pointer_count)
+                    (
+                        start_point + i * pointer_distance
+                        if start_point + i * pointer_distance <= 1
+                        else start_point + i * pointer_distance - 1
+                    )
+                    for i in range(self.roulette_pointer_count)
                 ]
                 for pointer in pointers:
                     index = self._select_chromosome(
                         pointer, self._fitness_roulette_wheel
                     )
-                    selected_population.append(population[index])
+                    if index >= len(population):
+                        continue
+                    else:
+                        selected_population.append(population[index])
 
         return selected_population
 
@@ -146,21 +152,28 @@ class TournamentSelectionFilter(SelectionBehavior[Chromosome]):
     ):
         super().__init__("TournamentSelection")
         self.tournament_size = tournament_size
-        self.tournament_count = running_count
+        self.running_count = running_count
 
     def select(self, population, population_info):
         selected_population: list[Chromosome] = []
         count = (
-            self.tournament_count
-            if self.tournament_count is not None
+            self.running_count
+            if self.running_count is not None
             else population_info.population_size
         )
 
         for _ in range(count):
             tournament_chromosomes: list[Chromosome] = []
-            for _ in range(self.tournament_size):
-                rand_index = np.random.randint(0, population_info.population_size)
-                tournament_chromosomes.append(population[rand_index])
+
+            if self.tournament_size > population_info.population_size:
+                self.tournament_size = population_info.population_size
+
+            rand_index_list = np.random.choice(
+                population_info.population_size, self.tournament_size, replace=False
+            )
+
+            for index in rand_index_list.tolist():
+                tournament_chromosomes.append(population[index])
 
             best_chromosome = self._select_best_chromosome(
                 tournament_chromosomes, population_info
