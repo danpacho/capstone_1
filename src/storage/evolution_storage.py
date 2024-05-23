@@ -77,9 +77,9 @@ class EvolutionStorage:
         generations.sort()
         fitness_values = [
             (
-                self.fitness_storage.inquire(str(generation))
+                self.fitness_storage.inquire((generation))
                 if storage == "fitness"
-                else self.biased_fitness_storage.inquire(str(generation))
+                else self.biased_fitness_storage.inquire((generation))
             )
             for generation in generations
         ]
