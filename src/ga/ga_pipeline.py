@@ -107,6 +107,7 @@ class GAPipeline(Generic[ChromosomeType]):
             "suite_min_population": self.suite_min_population,
             "immediate_exit": self._should_stop,
             "generation": self._generation,
+            "initial_population": self.population_initializer.population_size,
             "population_count": self.population_count,
             "mutation_count": self._mutation_count,
             "mutation_probability": self.mutation_probability,
@@ -181,9 +182,14 @@ class GAPipeline(Generic[ChromosomeType]):
     def _fitness_calculation(self):
         fitness_success_chromosomes: list[ChromosomeType] = []
         for chromosome in self._population:
-            success, fitness, biased_fitness = self.fitness_calculator.judge_fitness(
-                chromosome
+            success, fitness, biased_fitness, calc_result = (
+                self.fitness_calculator.judge_fitness(chromosome)
             )
+            # Update the chromosome fitness
+            chromosome.fitness = fitness
+            chromosome.biased_fitness = biased_fitness
+            chromosome.fitness_pure_result = calc_result
+
             if success:
                 self.population_storage.insert_chromosome(
                     chromosome, (fitness, biased_fitness)
