@@ -11,6 +11,8 @@ class ElitismSelectionFilter(SelectionBehavior[Chromosome]):
     """
     Elitism selection filter
 
+    Select the chromosomes that are above the `elitism_criterion` percentile, calculated by the fitness distribution
+
     Args:
         elitism_criterion (`float`): Elitism criterion to select the chromosomes.
 
@@ -51,6 +53,12 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
     """
     Roulette wheel selection filter
 
+    1. Generate the roulette wheel for the fitness distribution (0 ~ 1)
+    2. roulette_type
+            - "random" Randomly select the pointer, p(0 ~ 1) and select the chromosome from the roulette wheel
+            - "universal_stochastic" Select the pointer distance and select the chromosome from the roulette wheel
+    3. Repeat the process `running_count` times
+
     Args:
         pointer_count (`int`): Number of pointers to select the chromosomes
         roulette_type (`Literal["random", "universal_stochastic"]`): Type of roulette wheel selection
@@ -73,9 +81,9 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
         self._is_roulette_initialized = False
         self._fitness_roulette_wheel: np.ndarray[np.float64] = np.array([])
 
-    def generate_roulette_wheel(self, population_info: PopulationStorage):
+    def _generate_roulette_wheel(self, population_info: PopulationStorage):
         """
-        Generate the roulette wheel for the fitness and biased fitness distribution
+        Generate the roulette wheel for the fitness distribution
         """
         # Reset the roulette wheel
         self._fitness_roulette_wheel = np.array([])
@@ -89,7 +97,7 @@ class RouletteWheelSelectionFilter(SelectionBehavior[Chromosome]):
             )
 
     def select(self, population, population_info):
-        self.generate_roulette_wheel(population_info)
+        self._generate_roulette_wheel(population_info)
 
         selected_population: list[Chromosome] = []
 
@@ -142,6 +150,9 @@ class TournamentSelectionFilter(SelectionBehavior[Chromosome]):
     """
     Tournament selection filter
 
+    1. Randomly select the `tournament_size` of chromosomes and select the best chromosome from the tournament
+    2. Repeat the process `running_count` times
+
     Args:
         tournament_size (`int`): Size of the tournament
         running_count (`int`): Number of tournaments to run
@@ -183,7 +194,9 @@ class TournamentSelectionFilter(SelectionBehavior[Chromosome]):
         return selected_population
 
     def _select_best_chromosome(
-        self, tournament_chromosomes: list[Chromosome], population_info
+        self,
+        tournament_chromosomes: list[Chromosome],
+        population_info: PopulationStorage,
     ) -> Chromosome:
         best_chromosome = None
         best_fitness = -np.inf
