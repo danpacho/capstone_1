@@ -12,6 +12,14 @@ ChromosomeGene = TypeVar("ChromosomeGene", bound=tuple[Gene, ...])
 class Chromosome(Generic[ChromosomeGene]):
     """
     Chromosome class
+
+    Attributes:
+        gene_tuple (`tuple[Gene, ...]`): The gene list of the chromosome
+        chromosome_id (`str`): The ID of the chromosome
+        label (`str`): The label of the chromosome
+        fitness_pure_result (`Union[tuple, None]`): The fitness pure result
+        fitness (`float`): The fitness value of the chromosome
+        biased_fitness (`float`): The biased fitness value of the chromosome
     """
 
     def __init__(
@@ -20,12 +28,23 @@ class Chromosome(Generic[ChromosomeGene]):
         chromosome_id: str,
         gene_tuple: ChromosomeGene,
     ):
+        """
+        Args:
+            label (`str`): The label of the chromosome
+            chromosome_id (`str`): The ID of the chromosome
+            gene_tuple (`tuple[Gene, ...]`): The gene list of the chromosome
+        """
         chromosome_id = str(chromosome_id)
 
         self.gene_tuple = gene_tuple
         self.chromosome_id = chromosome_id
         self.label = f"{label}_{self.chromosome_id}"
         self.label += f": {[gene.label for gene in gene_tuple]}"
+
+        self.fitness_pure_result: Union[tuple, None] = None
+        self.fitness: float = 0.0
+        self.biased_fitness: float = 0.0
+
         for gene in gene_tuple:
             gene.update_gene_id(self.chromosome_id)
 
