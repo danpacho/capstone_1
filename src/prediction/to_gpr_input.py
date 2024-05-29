@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name
+
 import numpy as np
 from sklearn.decomposition import PCA
 
@@ -13,9 +15,10 @@ def to_gpr_input(
     flat: bool = False,
 ) -> V3_group:
     """
-    Convert the `pattern matrix` into the `gpr input` by adding the `0` or `1` value to the `pattern matrix`.
+    Convert the `pattern matrix` into the `gpr input`
+    by adding the `-1` or `1` value to the `pattern matrix`.
 
-    (`[x, y, fill|empty]`) - V3_group
+    (`[x, y, fill=1|empty=-1]`) - V3_group
 
     Args:
         pca (`PCA`): PCA object to transform the input
@@ -43,9 +46,8 @@ def to_gpr_input(
     gpr_input: V3_group = V.initialize_matrix_3d()
     gpr_coord_key: set[str] = set()
 
-    # TODO: 1000 is success value for making prediction function working well
-    TRUE = 1
-    FALSE = -1
+    FILLED = 1
+    EMPTY = -1
 
     for coord in full_coord:
         coord_id = f"{coord[0]}_{coord[1]}"
@@ -55,9 +57,9 @@ def to_gpr_input(
         gpr_coord_key.add(coord_id)
 
         if coord_id in pattern_coord_key:
-            gpr_input = V.append_v3(gpr_input, np.array([coord[0], coord[1], TRUE]))
+            gpr_input = V.append_v3(gpr_input, np.array([coord[0], coord[1], FILLED]))
         else:
-            gpr_input = V.append_v3(gpr_input, np.array([coord[0], coord[1], FALSE]))
+            gpr_input = V.append_v3(gpr_input, np.array([coord[0], coord[1], EMPTY]))
 
     if full_coord.shape[0] != gpr_input.shape[0]:
         raise ValueError(
