@@ -58,14 +58,14 @@ class Grid:
         self.bound_y: tuple[float, float] = bound[1]
         self.grid_matrix: V2_group = V.initialize_matrix_2d()
 
-    def generate_grid(self) -> V2_group:
+    def generate_grid(self, scale: float = 1) -> np.ndarray[np.float64]:
         """
         Generate grid vector
 
         Returns:
             Gv - grid cell vector
         """
-        grid_matrix = V.initialize_matrix_2d()
+        grid_matrix = np.empty((0, 2), dtype=np.float64)
         cell_x_count = int((self.bound_x[1] - self.bound_x[0]) / self.k)
         cell_y_count = int((self.bound_y[1] - self.bound_y[0]) / self.k)
 
@@ -73,8 +73,10 @@ class Grid:
             for j in range(cell_y_count):
                 x = self.bound_x[0] + self.k * i
                 y = self.bound_y[0] + self.k * j
-                coord_v: V2_group = V.vec2(x, y)
-                grid_matrix = V.append_v2(grid_matrix, coord_v)
+                coord_v: np.ndarray[np.float64] = np.array(
+                    [x * scale, y * scale], dtype=np.float64
+                )
+                grid_matrix = np.append(grid_matrix, [coord_v], axis=0)
 
         self.grid_matrix = grid_matrix
         return grid_matrix
