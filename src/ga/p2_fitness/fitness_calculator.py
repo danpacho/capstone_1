@@ -43,17 +43,19 @@ class FitnessCalculator(Generic[ChromosomeType]):
         raise NotImplementedError
 
     @abstractmethod
-    def judge_fitness(self, chromosome: ChromosomeType) -> tuple[bool, float, float]:
+    def judge_fitness(
+        self, chromosome: ChromosomeType
+    ) -> tuple[bool, float, float, tuple]:
         """
         Judge the fitness of the chromosome
 
         Args:
             chromosome (`ChromosomeType`): Chromosome to judge the criteria values
         Returns:
-            `tuple[bool, float, float]`: (Fitness success flag and Fitness score and Biased fitness score)
+            `tuple[bool, float, float, tuple]`: (Fitness success flag, Fitness score, Biased fitness score, Criteria values tuple)
         Example:
         ```python
-        success, fitness, biased_fitness = self.judge_criteria(chromosome)
+        success, fitness, biased_fitness, result_pure = self.judge_criteria(chromosome)
 
         if success:
             # Chromosome is valid
