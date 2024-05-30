@@ -1,9 +1,26 @@
 from typing import Literal, Union
-from random import uniform
 
-from src.geometry.vector import V2_group
+from sklearn.decomposition import PCA
+from sklearn.gaussian_process import GaussianProcessRegressor
+
+from src.prediction.to_gpr_input import to_gpr_input
 from src.ga.chromosome.vent_hole import VentHole
 from src.ga.p2_fitness.fitness_calculator import FitnessCalculator
+
+
+Criterion = tuple[Union[Literal["lower", "upper"]], float, float]
+"""
+Criterion: A tuple containing the direction `('lower' or 'upper')`, min value, and max value.
+
+Example:
+    ```python
+    # Lower is better, range 0.2 to 0.5
+    ("lower", 0.2, 0.5)
+
+    # Higher is better, range 10 to 100
+    ("higher", 10, 100) 
+    ```
+"""
 
 
 class VentFitnessCalculator(FitnessCalculator[VentHole]):
@@ -13,48 +30,109 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
 
     def __init__(
         self,
-        criteria_weight_list: tuple[float, float, float],
+        gpr_models: tuple[
+            GaussianProcessRegressor, GaussianProcessRegressor, GaussianProcessRegressor
+        ],
+        pca: PCA,
         drag_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
-        max_temp_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
+        drag_std_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
         avg_temp_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
+        avg_temp_std_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
+        max_temp_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
+        max_temp_std_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
+        criteria_weight_list: tuple[float, float, float],
     ):
         """
         Args:
-            criteria_weight_list: Criteria weights, `("drag", "max_temp", "avg_temp")`
-            drag_criterion: A tuple representing (direction, min, max) for drag
-            max_temp_criterion: A tuple representing (direction, min, max) for max_temp
-            avg_temp_criterion: A tuple representing (direction, min, max) for avg_temp
+            gpr_models: tuple of GPR models for drag, avg_temp, and max_temp.
+            pca: PCA model for the pattern matrix.
+            drag_criterion: The criterion for drag.
+            drag_std_criterion: The criterion for drag std.
+            avg_temp_criterion: The criterion for average temperature.
+            avg_temp_std_criterion: The criterion for average temperature std.
+            max_temp_criterion: The criterion for max temperature.
+            max_temp_std_criterion: The criterion for max temperature std.
+            criteria_weight_list: The weight list for drag, avg_temp, and max_temp.
         """
         super().__init__(
             fitness_method_name="GPR",
-            criteria_label_list=["drag", "max_temp", "avg_temp"],
+            criteria_label_list=["drag", "avg_temp", "max_temp"],
             criteria_weight_list=list(criteria_weight_list),
         )
 
+        self.gpr_models = gpr_models
+        self.pca = pca
+
         self.drag_criterion = drag_criterion
-        self.max_temp_criterion = max_temp_criterion
+        self.drag_std_criterion = drag_std_criterion
         self.avg_temp_criterion = avg_temp_criterion
+        self.avg_temp_std_criterion = avg_temp_std_criterion
+        self.max_temp_criterion = max_temp_criterion
+        self.max_temp_std_criterion = max_temp_std_criterion
 
     def calculate(self, chromosome) -> list[float]:
-        drag = self._calculate_drag(chromosome.pattern.pattern_matrix)
-        max_temp = self._calculate_max_temp(chromosome.pattern.pattern_matrix)
-        avg_temp = self._calculate_avg_temp(chromosome.pattern.pattern_matrix)
+        drag, avg_temp, max_temp = self._gpr_predict(chromosome)
 
-        return [drag, max_temp, avg_temp]
+        return [drag[0], drag[1], avg_temp[0], avg_temp[1], max_temp[0], max_temp[1]]
 
-    def judge_fitness(self, chromosome: VentHole) -> tuple[bool, float, float]:
-        drag, max_temp, avg_temp = self.calculate(chromosome)
-        drag_valid = self._is_valid(drag, self.drag_criterion)
-        max_temp_valid = self._is_valid(max_temp, self.max_temp_criterion)
-        avg_temp_valid = self._is_valid(avg_temp, self.avg_temp_criterion)
-
-        valid = drag_valid and max_temp_valid and avg_temp_valid
-        biased_fitness_score = self._calculate_fitness(
-            (drag, max_temp, avg_temp), self.criteria_weight_list
+    def _gpr_predict(
+        self, chromosome: VentHole
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+        input_matrix = to_gpr_input(
+            pca=self.pca,
+            pattern_matrix=chromosome.pattern.pattern_matrix,
+            bound=chromosome.pattern_bound,
+            resolution=chromosome.pattern.pattern_unit.grid.k,
+            flat=False,
         )
-        fitness_score = self._calculate_fitness((drag, max_temp, avg_temp), [1, 1, 1])
+        drag, drag_std = self.gpr_models[0].predict(input_matrix, return_std=True)
+        avg_temp, avg_temp_std = self.gpr_models[1].predict(
+            input_matrix, return_std=True
+        )
+        max_temp, max_temp_std = self.gpr_models[2].predict(
+            input_matrix, return_std=True
+        )
 
-        return valid, fitness_score, biased_fitness_score
+        return (drag, drag_std), (avg_temp, avg_temp_std), (max_temp, max_temp_std)
+
+    def judge_fitness(
+        self, chromosome: VentHole
+    ) -> tuple[bool, float, float, tuple[float, float, float]]:
+        drag, drag_std, avg_temp, avg_temp_std, max_temp, max_temp_std = self.calculate(
+            chromosome
+        )
+
+        drag_valid = self._is_valid(drag, self.drag_criterion)
+        drag_std_valid = self._is_valid(drag_std, self.drag_std_criterion)
+
+        avg_temp_valid = self._is_valid(avg_temp, self.avg_temp_criterion)
+        avg_temp_std_valid = self._is_valid(avg_temp_std, self.avg_temp_std_criterion)
+
+        max_temp_valid = self._is_valid(max_temp, self.max_temp_criterion)
+        max_temp_std_valid = self._is_valid(max_temp_std, self.max_temp_std_criterion)
+
+        valid: bool = (
+            drag_valid
+            and drag_std_valid
+            and avg_temp_valid
+            and avg_temp_std_valid
+            and max_temp_valid
+            and max_temp_std_valid
+        )
+
+        biased_fitness_score: float = self._calculate_fitness(
+            (drag, avg_temp, max_temp), self.criteria_weight_list
+        )
+        fitness_score: float = self._calculate_fitness(
+            (drag, avg_temp, max_temp), (1, 1, 1)
+        )
+
+        return (
+            valid,
+            fitness_score,
+            biased_fitness_score,
+            (drag, avg_temp, max_temp),
+        )
 
     def _is_valid(
         self,
@@ -99,7 +177,17 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
             return (value - min_value) / (max_value - min_value)
 
     def _calculate_fitness(
-        self, results: tuple[float, float, float], weights: tuple[float, float, float]
+        self,
+        results: tuple[
+            float,
+            float,
+            float,
+        ],
+        weights: tuple[
+            float,
+            float,
+            float,
+        ],
     ) -> float:
         """
         Calculate the overall fitness score by normalizing each criterion and applying weights.
@@ -113,7 +201,10 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
         Returns:
             float: The calculated fitness score.
         """
-        drag, max_temp, avg_temp = results
+        drag, avg_temp, max_temp = results
+        drag = drag[0]
+        avg_temp = avg_temp[0]
+        max_temp = max_temp[0]
 
         # Extract min and max values from the criteria
         drag_direction, drag_min, drag_max = self.drag_criterion
@@ -122,54 +213,18 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
 
         # Normalize each criterion
         drag_norm = self._normalize(drag, drag_min, drag_max, direction=drag_direction)
-        max_temp_norm = self._normalize(
-            max_temp, max_temp_min, max_temp_max, direction=max_temp_direction
-        )
         avg_temp_norm = self._normalize(
             avg_temp, avg_temp_min, avg_temp_max, direction=avg_temp_direction
+        )
+        max_temp_norm = self._normalize(
+            max_temp, max_temp_min, max_temp_max, direction=max_temp_direction
         )
 
         # Calculate the fitness score
         fitness_score = (
             weights[0] * drag_norm
-            + weights[1] * max_temp_norm
-            + weights[2] * avg_temp_norm
+            + weights[1] * avg_temp_norm
+            + weights[2] * max_temp_norm
         )
 
         return fitness_score
-
-    def _calculate_drag(self, pattern_matrix: V2_group) -> float:
-        """
-        Calculate the drag value for the given pattern matrix.
-
-        Args:
-            pattern_matrix: The pattern matrix for the vent hole.
-
-        Returns:
-            float: The calculated drag value.
-        """
-        return uniform(0.25, 0.35)
-
-    def _calculate_max_temp(self, pattern_matrix: V2_group) -> float:
-        """
-        Calculate the maximum temperature for the given pattern matrix.
-
-        Args:
-            pattern_matrix: The pattern matrix for the vent hole.
-
-        Returns:
-            float: The calculated maximum temperature.
-        """
-        return uniform(400, 500)
-
-    def _calculate_avg_temp(self, pattern_matrix: V2_group) -> float:
-        """
-        Calculate the average temperature for the given pattern matrix.
-
-        Args:
-            pattern_matrix: The pattern matrix for the vent hole.
-
-        Returns:
-            float: The calculated average temperature.
-        """
-        return uniform(300, 400)
