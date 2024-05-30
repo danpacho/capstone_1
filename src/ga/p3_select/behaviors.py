@@ -29,7 +29,9 @@ class ElitismSelectionFilter(SelectionBehavior[Chromosome]):
     def select(self, population, population_info):
         selected_population: list[Chromosome] = []
         for chromosome in population:
-            fitness, biased_fitness = population_info.inquire_chromosome(chromosome)
+            fitness, biased_fitness = population_info.inquire_chromosome_fitness(
+                chromosome
+            )
             if fitness is None:
                 continue
 
@@ -201,7 +203,7 @@ class TournamentSelectionFilter(SelectionBehavior[Chromosome]):
         best_chromosome = None
         best_fitness = -np.inf
         for chromosome in tournament_chromosomes:
-            fitness, _ = population_info.inquire_chromosome(chromosome)
+            fitness, _ = population_info.inquire_chromosome_fitness(chromosome)
             if fitness is None:
                 continue
 
