@@ -1,3 +1,5 @@
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+
 from src.prediction.gpr_model_trainer import GPRModelTrainer
 from src.ga.chromosome.vent_hole import VentHole
 
@@ -31,23 +33,26 @@ from src.ga.p4_crossover.behaviors import (
 )
 
 # ----------------- Define the GA CONSTANTS -----------------
-# 1. Define the criteria with direction, min, and max values
-CRITERIA_WEIGHT = (
-    1.2,
-    1,
-    0.8,
-)
-# Define the criteria with direction, min, and max values
-DRAG_CRITERION: Criterion = ("lower", 0.2, 0.3)  # Lower is better, range 0.2 to 0.5
+# 1. Define the criteria weights, w1, w2, w3
+CRITERIA_WEIGHT = (1.2, 1, 0.8)
+
+# 2. Define the criteria with direction, min, and max values
+DRAG_CRITERION: Criterion = ("lower", 0.2, 0.3)  # Lower is better, range 0.2 to 0.3
 DRAG_STD_CRITERION: Criterion = ("lower", 0, 0.05)  # Lower is better, range 0 to 0.05
-AVG_TEMP_CRITERION: Criterion = ("lower", 250, 400)  # Lower is better, range 250 to 400
-AVG_TEMP_STD_CRITERION: Criterion = ("lower", 0, 10)  # Lower is better, range 0 to 50
-MAX_TEMP_CRITERION: Criterion = ("lower", 300, 500)  # Lower is better, range 300 to 500
-MAX_TEMP_STD_CRITERION: Criterion = (
+
+AVG_TEMP_CRITERION: Criterion = (
     "lower",
-    0,
-    10,
-)  # Lower is better, range 300 to 500
+    250,
+    400,
+)  # Lower is better, range 250C to 400C
+AVG_TEMP_STD_CRITERION: Criterion = ("lower", 0, 10)  # Lower is better, range 0C to 10C
+
+MAX_TEMP_CRITERION: Criterion = (
+    "lower",
+    300,
+    500,
+)  # Lower is better, range 300C to 500C
+MAX_TEMP_STD_CRITERION: Criterion = ("lower", 0, 10)  # Lower is better, range 0C to 10C
 
 # 2. Define the grid parameters
 GRID_SCALE = 1
@@ -60,15 +65,21 @@ GRID_BOUND = (
 
 # ----------------- Define the GA MODEL     -----------------
 
+gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
+
 model_trainer = GPRModelTrainer(
-    vent_bound=GRID_BOUND,
-    vent_bound_width=GRID_WIDTH,
-    vent_resolution=GRID_RESOLUTION,
-    vent_scale=GRID_SCALE,
+    gpr_kernel=gpr_kernel,
+    gpr_drag_config=(10, 1e-5),
+    gpr_max_temp_config=(10, 1e-3),
+    gpr_avg_temp_config=(10, 1e-3),
+    grid_bound=GRID_BOUND,
+    grid_bound_width=GRID_WIDTH,
+    grid_resolution=GRID_RESOLUTION,
+    grid_scale=GRID_SCALE,
     desired_variance=0.9,
 )
 
-gpr_models = model_trainer.get_trained_gpr_models()
+gpr_model = model_trainer.get_model()
 pca = model_trainer.get_pca()
 
 # ----------------- Define the GA PIPELINES -----------------
@@ -80,7 +91,7 @@ suite1 = GAPipeline[VentHole](
     crossover_behavior=OnePointCrossover(),
     selector_behavior=TournamentSelectionFilter(tournament_size=15),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_models,
+        gpr_models=gpr_model,
         pca=pca,
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
@@ -110,13 +121,13 @@ suite1 = GAPipeline[VentHole](
 )
 
 suite2 = GAPipeline[VentHole](
-    suite_name="suite_2",
+    suite_name="원하는 이름",
     suite_max_count=50,
-    suite_min_population=500,
+    suite_min_population=250,
     crossover_behavior=TwoPointCrossover(),
-    selector_behavior=ElitismSelectionFilter(elitism_criterion=0.75),
+    selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_models,
+        gpr_models=gpr_model,
         pca=pca,
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
@@ -129,7 +140,7 @@ suite2 = GAPipeline[VentHole](
     immediate_exit_condition=lambda x: x[0] >= 10000 and x[1] >= 10000,
     mutation_probability=0.01,
     population_initializer=VentInitializer(
-        population_size=2000,
+        population_size=1000,
         grid_scale=GRID_SCALE,
         grid_resolution=GRID_RESOLUTION,
         pattern_bound=GRID_BOUND,
@@ -152,7 +163,7 @@ suite3 = GAPipeline[VentHole](
     crossover_behavior=UniformCrossover(),
     selector_behavior=RouletteWheelSelectionFilter(roulette_pointer_count=4),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_models,
+        gpr_models=gpr_model,
         pca=pca,
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
