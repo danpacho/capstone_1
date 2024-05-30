@@ -1,6 +1,0 @@
-{
-    "grid_scale": "1",
-    "grid_resolution": "2",
-    "grid_bound_width": "60",
-    "grid_bound": "((-30.0, 30.0), (-30.0, 30.0))"
-}
