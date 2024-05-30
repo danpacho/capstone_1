@@ -83,7 +83,7 @@ class PopulationStorage:
             self.fitness_storage_keys[1], fitness[1]
         )
 
-    def inquire_chromosome(
+    def inquire_chromosome_fitness(
         self, chromosome: Chromosome
     ) -> Union[tuple[float, float], None]:
         """
