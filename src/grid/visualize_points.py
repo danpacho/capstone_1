@@ -3,13 +3,15 @@ import matplotlib.pyplot as plt
 from src.geometry.vector import V2_group
 
 
-def visualize_points(grid_cell_v: V2_group, k: float) -> None:
+def visualize_points(
+    grid_cell_v: V2_group, k: float, fig_size: tuple[int, int] = (10, 10)
+) -> None:
     """
     visualize points
     args:
         grid_cell_v: Gv - grid cell list
     """
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=fig_size)
     plt.axis("equal")
 
     cell_table: dict[str, int] = {}
