@@ -48,6 +48,24 @@ class Chromosome(Generic[ChromosomeGene]):
         for gene in gene_tuple:
             gene.update_gene_id(self.chromosome_id)
 
+    def update_fitness(
+        self,
+        fitness: float,
+        biased_fitness: float,
+        fitness_pure_result: Union[tuple, None],
+    ):
+        """
+        Updates the fitness of the chromosome
+
+        Args:
+            fitness (`float`): The fitness value of the chromosome
+            biased_fitness (`float`): The biased fitness value of the chromosome
+            fitness_pure_result (`Union[tuple, None]`): The fitness pure result
+        """
+        self.fitness = fitness
+        self.biased_fitness = biased_fitness
+        self.fitness_pure_result = fitness_pure_result
+
     @abstractmethod
     def crossover_genes(self, other_chromosome: "Chromosome") -> "Chromosome":
         """
