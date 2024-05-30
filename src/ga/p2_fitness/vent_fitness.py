@@ -86,12 +86,20 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
             flat=False,
         )
         drag, drag_std = self.gpr_models[0].predict(input_matrix, return_std=True)
+        drag = drag[0]
+        drag_std = drag_std[0]
+
         avg_temp, avg_temp_std = self.gpr_models[1].predict(
             input_matrix, return_std=True
         )
+        avg_temp = avg_temp[0]
+        avg_temp_std = avg_temp_std[0]
+
         max_temp, max_temp_std = self.gpr_models[2].predict(
             input_matrix, return_std=True
         )
+        max_temp = max_temp[0]
+        max_temp_std = max_temp_std[0]
 
         return (drag, drag_std), (avg_temp, avg_temp_std), (max_temp, max_temp_std)
 
@@ -101,7 +109,6 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
         drag, drag_std, avg_temp, avg_temp_std, max_temp, max_temp_std = self.calculate(
             chromosome
         )
-
         drag_valid = self._is_valid(drag, self.drag_criterion)
         drag_std_valid = self._is_valid(drag_std, self.drag_std_criterion)
 
@@ -202,9 +209,6 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
             float: The calculated fitness score.
         """
         drag, avg_temp, max_temp = results
-        drag = drag[0]
-        avg_temp = avg_temp[0]
-        max_temp = max_temp[0]
 
         # Extract min and max values from the criteria
         drag_direction, drag_min, drag_max = self.drag_criterion
