@@ -23,6 +23,7 @@ class GAPipeline(Generic[ChromosomeType]):
     Phase 3: Selection
     Phase 4: Crossover
     Phase 5: Mutation
+    Phase 6: Fitness Calculation for children (optional)
     """
 
     def __init__(
@@ -36,6 +37,7 @@ class GAPipeline(Generic[ChromosomeType]):
         crossover_behavior: CrossoverBehavior,
         mutation_probability: float,
         immediate_exit_condition: Callable[[tuple[float, float]], bool],
+        check_children_fitness: bool = True,
     ) -> None:
         """
         Args:
@@ -48,8 +50,10 @@ class GAPipeline(Generic[ChromosomeType]):
             crossover_behavior: Crossover behavior for the genetic algorithm
             mutation_probability (`float`): Mutation probability, in the range of `[0, 1]`, if `0.5%` then `0.005`
             immediate_exit_condition: Immediate exit condition, (fitness, biased_fitness) -> bool
+            check_children_fitness (`bool`): Check the children fitness
         """
         self.suite_name = suite_name
+        self.check_children_fitness = check_children_fitness
 
         if suite_max_count <= 0:
             raise ValueError("The suite_max_count should be greater than 0")
@@ -164,7 +168,7 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         final_result: list[tuple[float, float]] = []
         for chromosome in self._population:
-            result = self.population_storage.inquire_chromosome(chromosome)
+            result = self.population_storage.inquire_chromosome_fitness(chromosome)
             if result is None:
                 print(
                     f"Error: chromosome {chromosome.label} not found in the population"
@@ -186,9 +190,7 @@ class GAPipeline(Generic[ChromosomeType]):
                 self.fitness_calculator.judge_fitness(chromosome)
             )
             # Update the chromosome fitness
-            chromosome.fitness = fitness
-            chromosome.biased_fitness = biased_fitness
-            chromosome.fitness_pure_result = calc_result
+            chromosome.update_fitness(fitness, biased_fitness, calc_result)
 
             if success:
                 self.population_storage.insert_chromosome(
@@ -233,6 +235,17 @@ class GAPipeline(Generic[ChromosomeType]):
                 chromosome.mutate_genes()
                 self._mutation_count += 1
 
+    @property
+    def _exit_condition(self) -> bool:
+        """
+        Check if the exit condition is met
+        """
+        return (
+            self._generation >= self.suite_max_count
+            or self._should_stop
+            or self.population_count < self.suite_min_population
+        )
+
     def _run_generation(self):
         # Phase 1: Reset population for next generation
         self.population_storage.reset()
@@ -241,6 +254,9 @@ class GAPipeline(Generic[ChromosomeType]):
         self._fitness_calculation()
         if self._should_stop:
             print("Extraordinary chromosome found, stopping the evolution")
+            return
+
+        if self._exit_condition is True:
             return
 
         # Phase 3: Selection
@@ -254,7 +270,11 @@ class GAPipeline(Generic[ChromosomeType]):
         # Phase 5: Mutation
         self._mutate_popularization()
 
-        # Phase 6: Increment generation
+        # Phase 6: Fitness Calculation for children
+        if self.check_children_fitness:
+            self._fitness_calculation()
+
+        # Phase 7: Increment generation
         self._generation += 1
 
     def _log_result(self, title: str):
