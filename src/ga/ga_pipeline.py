@@ -1,5 +1,5 @@
 from random import random, shuffle
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar, Union
 
 from src.ga.gene.gene import Gene
 from src.ga.chromosome.chromosome import Chromosome
@@ -31,6 +31,7 @@ class GAPipeline(Generic[ChromosomeType]):
         suite_name: str,
         suite_max_count: int,
         suite_min_population: int,
+        suite_min_chromosome: int,
         population_initializer: PopularizationInitializer[ChromosomeType],
         fitness_calculator: FitnessCalculator[ChromosomeType],
         selector_behavior: SelectionBehavior[ChromosomeType],
@@ -44,6 +45,7 @@ class GAPipeline(Generic[ChromosomeType]):
             suite_name (`str`): Name of the G.A suite
             suite_max_count (`int`): Maximum count of the suite
             suite_min_population (`int`): Minimum population count
+            suite_min_chromosome (`int`): Minimum chromosome count(deduplicated chromosomes)
             population_initializer: Population initializer for the genetic algorithm
             fitness_calculator: Fitness calculator for the genetic algorithm
             selector_behavior: Selector behavior for the genetic algorithm
@@ -54,6 +56,8 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         self.suite_name = suite_name
         self.check_children_fitness = check_children_fitness
+
+        self.suite_min_chromosome = suite_min_chromosome
 
         if suite_max_count <= 0:
             raise ValueError("The suite_max_count should be greater than 0")
@@ -97,6 +101,7 @@ class GAPipeline(Generic[ChromosomeType]):
         self._generation: int = 0
         self._should_stop: bool = False
         self._mutation_count: int = 0
+        self._gen_calc_result: dict[str, tuple[bool, float, float, tuple]] = {}
 
         self._reset()
 
@@ -109,10 +114,12 @@ class GAPipeline(Generic[ChromosomeType]):
             "suite_name": self.suite_name,
             "suite_max_count": self.suite_max_count,
             "suite_min_population": self.suite_min_population,
+            "suite_min_chromosome": self.suite_min_chromosome,
             "immediate_exit": self._should_stop,
             "generation": self._generation,
             "initial_population": self.population_initializer.population_size,
             "population_count": self.population_count,
+            "unique_population_count": self.unique_population_count,
             "mutation_count": self._mutation_count,
             "mutation_probability": self.mutation_probability,
             "fitness_calculator": self.fitness_calculator.fitness_method_name,
@@ -134,6 +141,35 @@ class GAPipeline(Generic[ChromosomeType]):
         Get the population count
         """
         return len(self._population)
+
+    @property
+    def unique_population(self) -> Union[list[ChromosomeType], None]:
+        """
+        Get the unique population by gene label deduplication
+        """
+        if len(self._population) == 0:
+            return None
+
+        unique_chromosomes: list[ChromosomeType] = []
+        chromosome_ids: set[str] = set()
+
+        for chromosome in self._population:
+            gene_id = ""
+            for gene in chromosome.gene_tuple:
+                gene_id += gene.label
+
+            if gene_id not in chromosome_ids:
+                chromosome_ids.add(gene_id)
+                unique_chromosomes.append(chromosome)
+
+        return unique_chromosomes
+
+    @property
+    def unique_population_count(self) -> int:
+        """
+        Get the unique population count
+        """
+        return len(self.unique_population) if self.unique_population is not None else 0
 
     @property
     def generation(self) -> int:
@@ -186,9 +222,23 @@ class GAPipeline(Generic[ChromosomeType]):
     def _fitness_calculation(self):
         fitness_success_chromosomes: list[ChromosomeType] = []
         for chromosome in self._population:
+            gene_id = ""
+            for gene in chromosome.gene_tuple:
+                gene_id += gene.label
+
             success, fitness, biased_fitness, calc_result = (
-                self.fitness_calculator.judge_fitness(chromosome)
+                self._gen_calc_result[gene_id]
+                if gene_id in self._gen_calc_result
+                else (self.fitness_calculator.judge_fitness(chromosome))
             )
+
+            if gene_id not in self._gen_calc_result:
+                self._gen_calc_result[gene_id] = (
+                    success,
+                    fitness,
+                    biased_fitness,
+                    calc_result,
+                )
             # Update the chromosome fitness
             chromosome.update_fitness(fitness, biased_fitness, calc_result)
 
@@ -236,14 +286,18 @@ class GAPipeline(Generic[ChromosomeType]):
                 self._mutation_count += 1
 
     @property
-    def _exit_condition(self) -> bool:
+    def _terminate_condition(self) -> bool:
         """
-        Check if the exit condition is met
+        Check if the GA termination condition is met
         """
         return (
-            self._generation >= self.suite_max_count
+            (self._generation >= self.suite_max_count and self._generation != 0)
             or self._should_stop
-            or self.population_count < self.suite_min_population
+            or self.population_count <= self.suite_min_population
+            or (
+                self.unique_population_count <= self.suite_min_chromosome
+                and self._generation != 0
+            )
         )
 
     def _run_generation(self):
@@ -256,7 +310,7 @@ class GAPipeline(Generic[ChromosomeType]):
             print("Extraordinary chromosome found, stopping the evolution")
             return
 
-        if self._exit_condition is True:
+        if self._terminate_condition is True:
             return
 
         # Phase 3: Selection
@@ -295,7 +349,7 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         print("-" * 100)
         print(
-            f">> Generation: {self._generation}, Population: {self.population_count}, Should Stop: {self._should_stop}"
+            f">> Generation: {self._generation}, Population: {self.population_count}, Unique population: {self.unique_population_count}, Should Stop: {self._should_stop}"
         )
         print("-" * 100)
 
@@ -315,11 +369,7 @@ class GAPipeline(Generic[ChromosomeType]):
 
         self._pre_initialize()
 
-        while (
-            self._generation <= self.suite_max_count
-            and self._should_stop is False
-            and self.population_count >= self.suite_min_population
-        ):
+        while not self._terminate_condition:
             self._log_generation()
             self._run_generation()
             self._record_generation()
