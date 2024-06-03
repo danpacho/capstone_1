@@ -1,5 +1,6 @@
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
+from src.prediction.rf_model_trainer import RandomForestModelTrainer
 from src.prediction.gpr_model_trainer import GPRModelTrainer
 from src.ga.chromosome.vent_hole import VentHole
 
@@ -67,6 +68,38 @@ GRID_BOUND = (
 
 gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
 
+gpr_model_trainer = GPRModelTrainer(
+    gpr_kernel=gpr_kernel,
+    gpr_drag_config=(10, 1e-5),
+    gpr_max_temp_config=(10, 1e-3),
+    gpr_avg_temp_config=(10, 1e-3),
+    grid_bound=GRID_BOUND,
+    grid_bound_width=GRID_WIDTH,
+    grid_resolution=GRID_RESOLUTION,
+    grid_scale=GRID_SCALE,
+    desired_variance=0.9,
+)
+
+
+rf_model_trainer = RandomForestModelTrainer(
+    rf_drag_config=(100, 42),
+    rf_max_temp_config=(100, 42),
+    rf_avg_temp_config=(100, 42),
+    grid_bound=GRID_BOUND,
+    grid_bound_width=GRID_WIDTH,
+    grid_resolution=GRID_RESOLUTION,
+    grid_scale=GRID_SCALE,
+    desired_variance=0.9,
+)
+
+rf_model = rf_model_trainer.get_model()
+gpr_model = gpr_model_trainer.get_model()
+pca = gpr_model_trainer.get_pca()
+
+# ----------------- Define the GA PIPELINES -----------------
+
+gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
+
 model_trainer = GPRModelTrainer(
     gpr_kernel=gpr_kernel,
     gpr_drag_config=(10, 1e-5),
@@ -121,7 +154,7 @@ suite1 = GAPipeline[VentHole](
 )
 
 suite2 = GAPipeline[VentHole](
-    suite_name="원하는 이름",
+    suite_name="suite_2",
     suite_max_count=50,
     suite_min_population=250,
     crossover_behavior=TwoPointCrossover(),
@@ -140,6 +173,42 @@ suite2 = GAPipeline[VentHole](
     immediate_exit_condition=lambda x: x[0] >= 10000 and x[1] >= 10000,
     mutation_probability=0.01,
     population_initializer=VentInitializer(
+        population_size=1000,  # 1000 -> 시간이 많이 든다
+        grid_scale=GRID_SCALE,
+        grid_resolution=GRID_RESOLUTION,
+        pattern_bound=GRID_BOUND,
+        pattern_gene_pool=[circular_params],
+        shape_gene_pool=[
+            circle_params,
+            # donut_params,
+            # wing_params,
+            # hole_params,
+            # trapezoid_params,
+            # triangle_params,
+        ],
+    ),
+)
+
+suite2_2 = GAPipeline[VentHole](
+    suite_name="suite2_elite",
+    suite_max_count=50,
+    suite_min_population=175,
+    crossover_behavior=TwoPointCrossover(),
+    selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
+    fitness_calculator=VentFitnessCalculator(
+        pca=pca,
+        gpr_models=gpr_model,
+        criteria_weight_list=CRITERIA_WEIGHT,
+        drag_criterion=DRAG_CRITERION,
+        drag_std_criterion=DRAG_STD_CRITERION,
+        avg_temp_criterion=AVG_TEMP_CRITERION,
+        avg_temp_std_criterion=AVG_TEMP_STD_CRITERION,
+        max_temp_criterion=MAX_TEMP_CRITERION,
+        max_temp_std_criterion=MAX_TEMP_STD_CRITERION,
+    ),
+    immediate_exit_condition=lambda x: x[0] >= 10000 and x[1] >= 10000,
+    mutation_probability=0.01,
+    population_initializer=VentInitializer(
         population_size=1000,
         grid_scale=GRID_SCALE,
         grid_resolution=GRID_RESOLUTION,
@@ -147,11 +216,11 @@ suite2 = GAPipeline[VentHole](
         pattern_gene_pool=[circular_params, corn_params, grid_params],
         shape_gene_pool=[
             circle_params,
-            donut_params,
-            wing_params,
-            hole_params,
-            trapezoid_params,
-            triangle_params,
+            # donut_params,
+            # wing_params,
+            # hole_params,
+            # trapezoid_params,
+            # triangle_params,
         ],
     ),
 )

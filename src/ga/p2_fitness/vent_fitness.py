@@ -3,7 +3,7 @@ from typing import Literal, Union
 from sklearn.decomposition import PCA
 from sklearn.gaussian_process import GaussianProcessRegressor
 
-from src.prediction.to_gpr_input import to_gpr_input
+from src.prediction.to_model_input import to_model_input
 from src.ga.chromosome.vent_hole import VentHole
 from src.ga.p2_fitness.fitness_calculator import FitnessCalculator
 
@@ -78,7 +78,7 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
     def _gpr_predict(
         self, chromosome: VentHole
     ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
-        input_matrix = to_gpr_input(
+        input_matrix = to_model_input(
             pca=self.pca,
             pattern_matrix=chromosome.pattern.pattern_matrix,
             bound=chromosome.pattern_bound,
