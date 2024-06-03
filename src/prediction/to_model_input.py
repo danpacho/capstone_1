@@ -7,7 +7,7 @@ from src.grid.grid import Grid
 from src.geometry.vector import V2_group, V3_group, V
 
 
-def to_gpr_input(
+def to_model_input(
     pca: PCA,
     pattern_matrix: V2_group,
     bound: tuple[tuple[float, float], tuple[float, float]],
@@ -15,7 +15,7 @@ def to_gpr_input(
     flat: bool = False,
 ) -> V3_group:
     """
-    Convert the `pattern matrix` into the `gpr input`
+    Convert the `pattern matrix` into the `model input`
     by adding the `-1` or `1` value to the `pattern matrix`.
 
     (`[x, y, fill=1|empty=-1]`) - V3_group
