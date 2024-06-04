@@ -531,7 +531,7 @@ class ModelTrainer(Generic[ModelType]):
         file_path = os.path.join(self.data_path, "result.csv")
         self._box_title(f"Parsing result from {file_path}")
         parsed_result: dict[int, Tuple[float, float, float]] = {}
-        data = np.loadtxt(file_path, delimiter=",", dtype=str)
+        data = np.loadtxt(file_path, delimiter=",", dtype=str, encoding="utf-8")
 
         idx_ptr: int = 0
         for _, row in enumerate(data, start=0):
@@ -634,6 +634,7 @@ class ModelTrainer(Generic[ModelType]):
             os.path.join(model_train_path, "train_config.json"),
             "w",
             encoding="utf-8",
+            newline="\r"
         ) as f:
             json.dump(self.train_config, f, ensure_ascii=False, indent=4)
 
@@ -645,6 +646,7 @@ class ModelTrainer(Generic[ModelType]):
             os.path.join(model_train_path, "train_input.npy"),
             train_x_reduction,
         )
+        print("Reduction input saved to train_input.npy")
         np.save(
             os.path.join(model_train_path, "train_output.npy"),
             train_y,

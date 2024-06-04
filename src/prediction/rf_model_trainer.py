@@ -9,7 +9,7 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class RandomForestModelTrainer(
+class rfModelTrainer(
     ModelTrainer[
         tuple[
             RandomForestRegressor,
