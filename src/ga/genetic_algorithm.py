@@ -64,7 +64,7 @@ GRID_BOUND = (
     (-GRID_WIDTH / 2, GRID_WIDTH / 2),
 )
 
-# ----------------- Define the GA MODEL     -----------------
+# ----------------- Define the GA MODEL    -----------------
 
 gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
 gpr_model_trainer = GPRModelTrainer(
