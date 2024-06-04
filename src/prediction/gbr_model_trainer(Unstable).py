@@ -12,9 +12,9 @@ from src.prediction.model_trainer import ModelTrainer
 class GBRModelTrainer(
     ModelTrainer[
         tuple[
-            xgb,
-            xgb,
-            xgb,
+            "xgb",
+            "xgb",
+            "xgb"
         ]
     ]
 ):
@@ -37,7 +37,7 @@ class GBRModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "gbr",
+            "GBR",
             grid_scale,
             grid_resolution,
             grid_bound_width,

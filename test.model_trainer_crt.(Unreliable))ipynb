@@ -1,0 +1,219 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "_HOLE_BOUND = ((-10, 10), (-10, 10))  # Hole boundary -10 <= x <= 10, -10 <= y <= 10\n",
+    "\n",
+    "GRID_SCALE = 1\n",
+    "GRID_RESOLUTION = 2\n",
+    "GRID_W = 60\n",
+    "GRID_BOUND = ((-GRID_W / 2, GRID_W / 2), (-GRID_W / 2, GRID_W / 2))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "----------------------\n",
+      "| Model Trainer: CRT |\n",
+      "----------------------\n",
+      "-------------------------------\n",
+      "| Training set found, loading |\n",
+      "-------------------------------\n"
+     ]
+    },
+    {
+     "ename": "TypeError",
+     "evalue": "'int' object is not subscriptable",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mTypeError\u001b[0m                                 Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[2], line 14\u001b[0m\n\u001b[0;32m      1\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01msrc\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mprediction\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mcrt_model_trainer\u001b[39;00m \u001b[38;5;28;01mimport\u001b[39;00m crtModelTrainer\n\u001b[0;32m      3\u001b[0m model_trainer \u001b[38;5;241m=\u001b[39m crtModelTrainer(\n\u001b[0;32m      4\u001b[0m     crt_drag_config\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m42\u001b[39m,\n\u001b[0;32m      5\u001b[0m     crt_avg_temp_config\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m42\u001b[39m,\n\u001b[1;32m   (...)\u001b[0m\n\u001b[0;32m     11\u001b[0m     desired_variance\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m0.9\u001b[39m,\n\u001b[0;32m     12\u001b[0m )\n\u001b[1;32m---> 14\u001b[0m crt_model \u001b[38;5;241m=\u001b[39m \u001b[43mmodel_trainer\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mget_model\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[0;32m     15\u001b[0m pca_model \u001b[38;5;241m=\u001b[39m model_trainer\u001b[38;5;241m.\u001b[39mget_pca()\n",
+      "File \u001b[1;32mc:\\Users\\eaton\\Desktop\\Campus\\Capstone\\capstone_1\\src\\prediction\\model_trainer.py:96\u001b[0m, in \u001b[0;36mModelTrainer.get_model\u001b[1;34m(self)\u001b[0m\n\u001b[0;32m     89\u001b[0m \u001b[38;5;250m\u001b[39m\u001b[38;5;124;03m\"\"\"\u001b[39;00m\n\u001b[0;32m     90\u001b[0m \u001b[38;5;124;03mRetrieves the model.\u001b[39;00m\n\u001b[0;32m     91\u001b[0m \n\u001b[0;32m     92\u001b[0m \u001b[38;5;124;03mReturns:\u001b[39;00m\n\u001b[0;32m     93\u001b[0m \u001b[38;5;124;03m    ModelType: The model.\u001b[39;00m\n\u001b[0;32m     94\u001b[0m \u001b[38;5;124;03m\"\"\"\u001b[39;00m\n\u001b[0;32m     95\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_model \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[1;32m---> 96\u001b[0m     \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mtrain_model\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m\n\u001b[0;32m     98\u001b[0m \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_model\n",
+      "File \u001b[1;32mc:\\Users\\eaton\\Desktop\\Campus\\Capstone\\capstone_1\\src\\prediction\\crt_model_trainer.py:66\u001b[0m, in \u001b[0;36mcrtModelTrainer.train_model\u001b[1;34m(self)\u001b[0m\n\u001b[0;32m     56\u001b[0m \u001b[38;5;250m\u001b[39m\u001b[38;5;124;03m\"\"\"\u001b[39;00m\n\u001b[0;32m     57\u001b[0m \u001b[38;5;124;03mTrains a Classification and Regression Trees (CRT) model.\u001b[39;00m\n\u001b[0;32m     58\u001b[0m \n\u001b[1;32m   (...)\u001b[0m\n\u001b[0;32m     61\u001b[0m \u001b[38;5;124;03m    - `(crt for drag, crt for average temperature, crt for maximum temperature)`\u001b[39;00m\n\u001b[0;32m     62\u001b[0m \u001b[38;5;124;03m\"\"\"\u001b[39;00m\n\u001b[0;32m     63\u001b[0m input_matrix, output_matrix \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mget_train_set(use_original_input\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mFalse\u001b[39;00m)\n\u001b[0;32m     65\u001b[0m crt_drag \u001b[38;5;241m=\u001b[39m DecisionTreeRegressor(\n\u001b[1;32m---> 66\u001b[0m     random_state \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;43mself\u001b[39;49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mdrag_config\u001b[49m\u001b[43m[\u001b[49m\u001b[38;5;241;43m0\u001b[39;49m\u001b[43m]\u001b[49m\n\u001b[0;32m     67\u001b[0m )\n\u001b[0;32m     68\u001b[0m crt_avg_temp \u001b[38;5;241m=\u001b[39m DecisionTreeRegressor(\n\u001b[0;32m     69\u001b[0m     random_state \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mavg_temp_config[\u001b[38;5;241m0\u001b[39m]\n\u001b[0;32m     70\u001b[0m )\n\u001b[0;32m     71\u001b[0m crt_max_temp \u001b[38;5;241m=\u001b[39m DecisionTreeRegressor(\n\u001b[0;32m     72\u001b[0m     random_state \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mmax_temp_config[\u001b[38;5;241m0\u001b[39m]\n\u001b[0;32m     73\u001b[0m )\n",
+      "\u001b[1;31mTypeError\u001b[0m: 'int' object is not subscriptable"
+     ]
+    }
+   ],
+   "source": [
+    "from src.prediction.crt_model_trainer import crtModelTrainer\n",
+    "\n",
+    "model_trainer = crtModelTrainer(\n",
+    "    crt_drag_config=42,\n",
+    "    crt_avg_temp_config=42,\n",
+    "    crt_max_temp_config=42,\n",
+    "    grid_bound=GRID_BOUND,\n",
+    "    grid_bound_width=GRID_W,\n",
+    "    grid_resolution=GRID_RESOLUTION,\n",
+    "    grid_scale=GRID_SCALE,\n",
+    "    desired_variance=0.9,\n",
+    ")\n",
+    "\n",
+    "crt_model = model_trainer.get_model()\n",
+    "pca_model = model_trainer.get_pca()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "\n",
+    "res = model_trainer.get_train_set()\n",
+    "\n",
+    "if res is not None:\n",
+    "    x, y = res\n",
+    "\n",
+    "    test = x[1:2]\n",
+    "    drag = crt_model[0].predict(test)\n",
+    "    avg_temp = crt_model[1].predict(test)\n",
+    "    max_temp = crt_model[2].predict(test)\n",
+    "\n",
+    "    print(\"real: [0.29223466, 372.84985, 452.61221]\")\n",
+    "    print(\"predicted: \", drag, avg_temp, max_temp)\n",
+    "    print(\"std: \")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from src.grid.visualize_points import visualize_points\n",
+    "from src.geometry.pattern_unit import (\n",
+    "    PatternUnit,\n",
+    "    Shape,\n",
+    "    PatternTransformation,\n",
+    "    PatternTransformationMatrix,\n",
+    "    Pattern,\n",
+    ")\n",
+    "\n",
+    "pattern1 = Pattern(\n",
+    "    pattern_transformation_matrix=PatternTransformationMatrix(\n",
+    "        pattern_unit=PatternUnit(\n",
+    "            Shape(\n",
+    "                w=10,\n",
+    "                h=7.5,\n",
+    "                area_functions=[\n",
+    "                    lambda x, y: x**2 / 16 + y**2 / 9 <= 1\n",
+    "                    and x**2 + y**2 >= 4,  # Donut\n",
+    "                ],\n",
+    "            ),\n",
+    "            k=1 / GRID_RESOLUTION,\n",
+    "        ),\n",
+    "        pattern_transformation=PatternTransformation(\n",
+    "            \"circular\",\n",
+    "            dx=2.5,\n",
+    "            di=25,\n",
+    "            phi=np.pi / 7,\n",
+    "        ),\n",
+    "        pattern_bound=GRID_BOUND,\n",
+    "    ),\n",
+    ")\n",
+    "\n",
+    "visualize_points(\n",
+    "    pattern1.pattern_matrix,\n",
+    "    k=1 / GRID_RESOLUTION,\n",
+    ")\n",
+    "\n",
+    "pattern2 = Pattern(\n",
+    "    pattern_transformation_matrix=PatternTransformationMatrix(\n",
+    "        pattern_unit=PatternUnit(\n",
+    "            Shape(\n",
+    "                w=10,\n",
+    "                h=5,\n",
+    "                area_functions=[lambda x, y: x**2 / 9 + y**2 / 2 <= 1],\n",
+    "            ),\n",
+    "            k=1 / GRID_RESOLUTION,\n",
+    "        ),\n",
+    "        pattern_transformation=PatternTransformation(\n",
+    "            \"grid\",\n",
+    "            dx=10,\n",
+    "            di=10 / 2,\n",
+    "        ),\n",
+    "        pattern_bound=GRID_BOUND,\n",
+    "    ),\n",
+    ")\n",
+    "visualize_points(\n",
+    "    pattern2.pattern_matrix,\n",
+    "    k=1 / GRID_RESOLUTION,\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from src.prediction.to_model_input import to_model_input\n",
+    "\n",
+    "ins = to_model_input(\n",
+    "    pca_model,\n",
+    "    pattern_matrix=pattern1.pattern_matrix,\n",
+    "    bound=GRID_BOUND,\n",
+    "    resolution=1 / GRID_RESOLUTION,\n",
+    ")\n",
+    "ins2 = to_model_input(\n",
+    "    pca_model,\n",
+    "    pattern_matrix=pattern2.pattern_matrix,\n",
+    "    bound=GRID_BOUND,\n",
+    "    resolution=1 / GRID_RESOLUTION,\n",
+    ")\n",
+    "print(ins.shape)\n",
+    "print(ins2.shape)\n",
+    "\n",
+    "drag, std = gpr_model[0].predict(ins, return_std=True)\n",
+    "avg_temp, std2 = gpr_model[1].predict(ins, return_std=True)\n",
+    "max_temp, std3 = gpr_model[2].predict(ins, return_std=True)\n",
+    "\n",
+    "print(\"ins1 prediction\")\n",
+    "print(f\"prediction: {drag}, std: {std}\")\n",
+    "print(f\"prediction: {avg_temp}, std: {std2}\")\n",
+    "print(f\"prediction: {max_temp}, std: {std3}\")\n",
+    "\n",
+    "drag, std = gpr_model[0].predict(ins2, return_std=True)\n",
+    "avg_temp, std2 = gpr_model[1].predict(ins2, return_std=True)\n",
+    "max_temp, std3 = gpr_model[2].predict(ins2, return_std=True)\n",
+    "print(\"ins2 prediction\")\n",
+    "print(f\"prediction: {drag}, std: {std}\")\n",
+    "print(f\"prediction: {avg_temp}, std: {std2}\")\n",
+    "print(f\"prediction: {max_temp}, std: {std3}\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": ".venv",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

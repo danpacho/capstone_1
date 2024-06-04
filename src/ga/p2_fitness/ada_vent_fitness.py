@@ -1,9 +1,9 @@
 from typing import Literal, Union
 
 from sklearn.decomposition import PCA
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import AdaBoostRegressor
 
-from src.prediction.to_rf_input import to_rf_input
+from src.prediction.to_model_input import to_model_input
 from src.ga.chromosome.vent_hole import VentHole
 from src.ga.p2_fitness.fitness_calculator import FitnessCalculator
 
@@ -30,8 +30,8 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
 
     def __init__(
         self,
-        rf_models: tuple[
-            RandomForestRegressor, RandomForestRegressor, RandomForestRegressor
+        ada_models: tuple[
+            AdaBoostRegressor, AdaBoostRegressor, AdaBoostRegressor
         ],
         pca: PCA,
         drag_criterion: tuple[Union[Literal["lower", "upper"]], float, float],
@@ -44,7 +44,7 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
     ):
         """
         Args:
-            gpr_models: tuple of GPR models for drag, avg_temp, and max_temp.
+            ada_models: tuple of ADA models for drag, avg_temp, and max_temp.
             pca: PCA model for the pattern matrix.
             drag_criterion: The criterion for drag.
             drag_std_criterion: The criterion for drag std.
@@ -55,12 +55,12 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
             criteria_weight_list: The weight list for drag, avg_temp, and max_temp.
         """
         super().__init__(
-            fitness_method_name="GPR",
+            fitness_method_name="ADA",
             criteria_label_list=["drag", "avg_temp", "max_temp"],
             criteria_weight_list=list(criteria_weight_list),
         )
 
-        self.rf_models = rf_models
+        self.ada_models = ada_models
         self.pca = pca
 
         self.drag_criterion = drag_criterion
@@ -71,31 +71,31 @@ class VentFitnessCalculator(FitnessCalculator[VentHole]):
         self.max_temp_std_criterion = max_temp_std_criterion
 
     def calculate(self, chromosome) -> list[float]:
-        drag, avg_temp, max_temp = self._rf_predict(chromosome)
+        drag, avg_temp, max_temp = self._ada_predict(chromosome)
 
         return [drag[0], drag[1], avg_temp[0], avg_temp[1], max_temp[0], max_temp[1]]
 
-    def _rf_predict(
+    def _ada_predict(
         self, chromosome: VentHole
     ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
-        input_matrix = to_rf_input(
+        input_matrix = to_model_input(
             pca=self.pca,
             pattern_matrix=chromosome.pattern.pattern_matrix,
             bound=chromosome.pattern_bound,
             resolution=chromosome.pattern.pattern_unit.grid.k,
             flat=False,
         )
-        drag, drag_std = self.rf_models[0].predict(input_matrix, return_std=True)
+        drag, drag_std = self.ada_models[0].predict(input_matrix, return_std=True)
         drag = drag[0]
         drag_std = drag_std[0]
 
-        avg_temp, avg_temp_std = self.rf_models[1].predict(
+        avg_temp, avg_temp_std = self.ada_models[1].predict(
             input_matrix, return_std=True
         )
         avg_temp = avg_temp[0]
         avg_temp_std = avg_temp_std[0]
 
-        max_temp, max_temp_std = self.rf_models[2].predict(
+        max_temp, max_temp_std = self.ada_models[2].predict(
             input_matrix, return_std=True
         )
         max_temp = max_temp[0]

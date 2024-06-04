@@ -36,7 +36,7 @@ class crtModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "crt",
+            "CRT",
             grid_scale,
             grid_resolution,
             grid_bound_width,
@@ -69,7 +69,7 @@ class crtModelTrainer(
             random_state = self.avg_temp_config[0]
         )
         crt_max_temp = DecisionTreeRegressor(
-            random_state = self.max_temp_config[0],
+            random_state = self.max_temp_config[0]
         )
 
         crt_output_drag = output_matrix[:, 0]

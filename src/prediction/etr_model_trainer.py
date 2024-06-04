@@ -36,7 +36,7 @@ class etrModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "etr",
+            "ETR",
             grid_scale,
             grid_resolution,
             grid_bound_width,

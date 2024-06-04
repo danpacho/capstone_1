@@ -37,7 +37,7 @@ class rfModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "Random_Forest",
+            "RF",
             grid_scale,
             grid_resolution,
             grid_bound_width,

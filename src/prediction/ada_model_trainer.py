@@ -37,7 +37,7 @@ class adaModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "ada",
+            "ADA",
             grid_scale,
             grid_resolution,
             grid_bound_width,
@@ -63,15 +63,15 @@ class adaModelTrainer(
 
         ada_drag = AdaBoostRegressor(
             n_estimators=self.drag_config[0],
-            random_state=self.drag_config[1],
+            random_state=self.drag_config[1]
         )
         ada_avg_temp = AdaBoostRegressor(
             n_estimators=self.avg_temp_config[0],
-            random_state=self.avg_temp_config[1],
+            random_state=self.avg_temp_config[1]
         )
         ada_max_temp = AdaBoostRegressor(
             n_estimators=self.max_temp_config[0],
-            random_state=self.max_temp_config[1],
+            random_state=self.max_temp_config[1]
         )
 
         ada_output_drag = output_matrix[:, 0]

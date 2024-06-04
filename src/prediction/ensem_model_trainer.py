@@ -37,7 +37,7 @@ class ensemModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "ensem",
+            "ENSEM",
             grid_scale,
             grid_resolution,
             grid_bound_width,
