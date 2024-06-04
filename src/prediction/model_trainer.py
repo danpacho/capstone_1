@@ -67,6 +67,7 @@ class ModelTrainer(Generic[ModelType]):
             "grid_resolution": str(self.grid_resolution),
             "grid_bound_width": str(self.grid_bound_width),
             "grid_bound": str(self.grid_bound) if self.grid_bound else "None",
+            "desired_variance": str(desired_variance),
         }
         seed_str = "".join(self.train_config.values())
         self.train_id: str = self._generate_uuid_from_seed(seed_str)
@@ -634,7 +635,7 @@ class ModelTrainer(Generic[ModelType]):
             os.path.join(model_train_path, "train_config.json"),
             "w",
             encoding="utf-8",
-            newline="\r"
+            newline="\r",
         ) as f:
             json.dump(self.train_config, f, ensure_ascii=False, indent=4)
 
