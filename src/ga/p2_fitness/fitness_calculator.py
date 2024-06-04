@@ -6,7 +6,8 @@ from src.ga.chromosome.chromosome import Chromosome
 
 
 ChromosomeType = TypeVar("ChromosomeType", bound=Chromosome)
-ModelTrainerType = TypeVar("ModelTrainerType", tuple[ModelTrainer, ...])
+
+ModelTrainerType = TypeVar("ModelTrainerType", bound=tuple[ModelTrainer, ...])
 
 
 class FitnessCalculator(Generic[ChromosomeType, ModelTrainerType]):
