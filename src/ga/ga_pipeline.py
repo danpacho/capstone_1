@@ -1,6 +1,7 @@
 from random import random, shuffle
 from typing import Callable, Generic, TypeVar, Union
 
+from src.prediction.model_trainer import ModelTrainer
 from src.ga.gene.gene import Gene
 from src.ga.chromosome.chromosome import Chromosome
 from src.ga.p1_initialize.init_popularization import PopularizationInitializer
@@ -33,7 +34,7 @@ class GAPipeline(Generic[ChromosomeType]):
         suite_min_population: int,
         suite_min_chromosome: int,
         population_initializer: PopularizationInitializer[ChromosomeType],
-        fitness_calculator: FitnessCalculator[ChromosomeType],
+        fitness_calculator: FitnessCalculator[ChromosomeType, tuple[ModelTrainer, ...]],
         selector_behavior: SelectionBehavior[ChromosomeType],
         crossover_behavior: CrossoverBehavior,
         mutation_probability: float,
