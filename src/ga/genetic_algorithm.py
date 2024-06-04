@@ -80,7 +80,6 @@ gpr_model_trainer = GPRModelTrainer(
     desired_variance=0.9,
 )
 
-
 rf_model_trainer = RandomForestModelTrainer(
     rf_drag_config=(100, 42),
     rf_max_temp_config=(100, 42),
@@ -98,29 +97,11 @@ pca = gpr_model_trainer.get_pca()
 
 # ----------------- Define the GA PIPELINES -----------------
 
-gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
-
-model_trainer = GPRModelTrainer(
-    gpr_kernel=gpr_kernel,
-    gpr_drag_config=(10, 1e-5),
-    gpr_max_temp_config=(10, 1e-3),
-    gpr_avg_temp_config=(10, 1e-3),
-    grid_bound=GRID_BOUND,
-    grid_bound_width=GRID_WIDTH,
-    grid_resolution=GRID_RESOLUTION,
-    grid_scale=GRID_SCALE,
-    desired_variance=0.9,
-)
-
-gpr_model = model_trainer.get_model()
-pca = model_trainer.get_pca()
-
-# ----------------- Define the GA PIPELINES -----------------
-
 suite1 = GAPipeline[VentHole](
     suite_name="suite_1",
     suite_max_count=50,
     suite_min_population=200,
+    suite_min_chromosome=20,
     crossover_behavior=OnePointCrossover(),
     selector_behavior=TournamentSelectionFilter(tournament_size=15),
     fitness_calculator=VentFitnessCalculator(
@@ -157,6 +138,7 @@ suite2 = GAPipeline[VentHole](
     suite_name="suite_2",
     suite_max_count=50,
     suite_min_population=250,
+    suite_min_chromosome=20,
     crossover_behavior=TwoPointCrossover(),
     selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
     fitness_calculator=VentFitnessCalculator(
@@ -193,6 +175,7 @@ suite2_2 = GAPipeline[VentHole](
     suite_name="suite2_elite",
     suite_max_count=50,
     suite_min_population=175,
+    suite_min_chromosome=20,
     crossover_behavior=TwoPointCrossover(),
     selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
     fitness_calculator=VentFitnessCalculator(
@@ -229,6 +212,7 @@ suite3 = GAPipeline[VentHole](
     suite_name="suite_3",
     suite_max_count=50,
     suite_min_population=200,
+    suite_min_chromosome=20,
     crossover_behavior=UniformCrossover(),
     selector_behavior=RouletteWheelSelectionFilter(roulette_pointer_count=4),
     fitness_calculator=VentFitnessCalculator(
