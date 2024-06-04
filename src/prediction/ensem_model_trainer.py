@@ -10,7 +10,7 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class ensemModelTrainer(
+class EnsemModelTrainer(
     ModelTrainer[
         tuple[
             BaggingRegressor,
@@ -51,9 +51,7 @@ class ensemModelTrainer(
 
     def train_model(
         self,
-    ) -> tuple[
-        BaggingRegressor, BaggingRegressor, BaggingRegressor
-    ]:
+    ) -> tuple[BaggingRegressor, BaggingRegressor, BaggingRegressor]:
         """
         Trains a Ensemble (ensem) model.
 
@@ -65,18 +63,18 @@ class ensemModelTrainer(
 
         ensem_drag = BaggingRegressor(
             estimator=DecisionTreeRegressor(random_state=self.drag_config[0]),
-            n_estimators = self.drag_config[1],
-            random_state = self.drag_config[2]
+            n_estimators=self.drag_config[1],
+            random_state=self.drag_config[2],
         )
         ensem_avg_temp = BaggingRegressor(
             estimator=DecisionTreeRegressor(random_state=self.avg_temp_config[0]),
-            n_estimators = self.avg_temp_config[1],
-            random_state = self.avg_temp_config[2]
+            n_estimators=self.avg_temp_config[1],
+            random_state=self.avg_temp_config[2],
         )
         ensem_max_temp = BaggingRegressor(
             estimator=DecisionTreeRegressor(random_state=self.max_temp_config[0]),
-            n_estimators = self.max_temp_config[1],
-            random_state = self.max_temp_config[2]
+            n_estimators=self.max_temp_config[1],
+            random_state=self.max_temp_config[2],
         )
 
         ensem_output_drag = output_matrix[:, 0]

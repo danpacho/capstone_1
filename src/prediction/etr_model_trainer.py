@@ -9,7 +9,7 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class etrModelTrainer(
+class EtrModelTrainer(
     ModelTrainer[
         tuple[
             ExtraTreesRegressor,
@@ -50,9 +50,7 @@ class etrModelTrainer(
 
     def train_model(
         self,
-    ) -> tuple[
-        ExtraTreesRegressor, ExtraTreesRegressor, ExtraTreesRegressor
-    ]:       
+    ) -> tuple[ExtraTreesRegressor, ExtraTreesRegressor, ExtraTreesRegressor]:
         """
         Trains a Extra Trees Regressor (ETR) model.
 
@@ -63,16 +61,13 @@ class etrModelTrainer(
         input_matrix, output_matrix = self.get_train_set(use_original_input=False)
 
         etr_drag = ExtraTreesRegressor(
-            n_estimators =  self.drag_config[0],
-            random_state = self.drag_config[1]
+            n_estimators=self.drag_config[0], random_state=self.drag_config[1]
         )
         etr_avg_temp = ExtraTreesRegressor(
-            n_estimators =  self.avg_temp_config[0],
-            random_state = self.avg_temp_config[1]
+            n_estimators=self.avg_temp_config[0], random_state=self.avg_temp_config[1]
         )
         etr_max_temp = ExtraTreesRegressor(
-            n_estimators =  self.max_temp_config[0],
-            random_state = self.max_temp_config[1]
+            n_estimators=self.max_temp_config[0], random_state=self.max_temp_config[1]
         )
 
         etr_output_drag = output_matrix[:, 0]

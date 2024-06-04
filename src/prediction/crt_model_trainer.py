@@ -9,7 +9,7 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class crtModelTrainer(
+class CrtModelTrainer(
     ModelTrainer[
         tuple[
             DecisionTreeRegressor,
@@ -50,9 +50,7 @@ class crtModelTrainer(
 
     def train_model(
         self,
-    ) -> tuple[
-        DecisionTreeRegressor, DecisionTreeRegressor, DecisionTreeRegressor
-    ]:
+    ) -> tuple[DecisionTreeRegressor, DecisionTreeRegressor, DecisionTreeRegressor]:
         """
         Trains a Classification and Regression Trees (CRT) model.
 
@@ -62,15 +60,9 @@ class crtModelTrainer(
         """
         input_matrix, output_matrix = self.get_train_set(use_original_input=False)
 
-        crt_drag = DecisionTreeRegressor(
-            random_state = self.drag_config[0]
-        )
-        crt_avg_temp = DecisionTreeRegressor(
-            random_state = self.avg_temp_config[0]
-        )
-        crt_max_temp = DecisionTreeRegressor(
-            random_state = self.max_temp_config[0]
-        )
+        crt_drag = DecisionTreeRegressor(random_state=self.drag_config[0])
+        crt_avg_temp = DecisionTreeRegressor(random_state=self.avg_temp_config[0])
+        crt_max_temp = DecisionTreeRegressor(random_state=self.max_temp_config[0])
 
         crt_output_drag = output_matrix[:, 0]
         crt_output_avg_temp = output_matrix[:, 1]

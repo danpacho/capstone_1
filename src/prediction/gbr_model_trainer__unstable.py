@@ -2,22 +2,16 @@
 ModelTrainer class which is responsible for training a Gradient Boosting Regression (GBR) model.
 """
 
+# pylint: disable=import-error
 from xgboost import xgb
+
 
 from src.prediction.model_trainer import ModelTrainer
 
 # pylint: disable=invalid-name
 
 
-class GBRModelTrainer(
-    ModelTrainer[
-        tuple[
-            "xgb",
-            "xgb",
-            "xgb"
-        ]
-    ]
-):
+class GBRModelTrainer(ModelTrainer[tuple["xgb", "xgb", "xgb"]]):
     """
     Gradient_Boosting_Regression model trainer class.
     """

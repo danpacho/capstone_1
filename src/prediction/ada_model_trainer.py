@@ -9,14 +9,8 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class adaModelTrainer(
-    ModelTrainer[
-        tuple[
-            AdaBoostRegressor,
-            AdaBoostRegressor,
-            AdaBoostRegressor
-        ]
-    ]
+class AdaModelTrainer(
+    ModelTrainer[tuple[AdaBoostRegressor, AdaBoostRegressor, AdaBoostRegressor]]
 ):
     """
     AdaBoostRegressor model trainer class.
@@ -62,16 +56,13 @@ class adaModelTrainer(
         input_matrix, output_matrix = self.get_train_set(use_original_input=False)
 
         ada_drag = AdaBoostRegressor(
-            n_estimators=self.drag_config[0],
-            random_state=self.drag_config[1]
+            n_estimators=self.drag_config[0], random_state=self.drag_config[1]
         )
         ada_avg_temp = AdaBoostRegressor(
-            n_estimators=self.avg_temp_config[0],
-            random_state=self.avg_temp_config[1]
+            n_estimators=self.avg_temp_config[0], random_state=self.avg_temp_config[1]
         )
         ada_max_temp = AdaBoostRegressor(
-            n_estimators=self.max_temp_config[0],
-            random_state=self.max_temp_config[1]
+            n_estimators=self.max_temp_config[0], random_state=self.max_temp_config[1]
         )
 
         ada_output_drag = output_matrix[:, 0]
