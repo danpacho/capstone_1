@@ -76,17 +76,16 @@ class VentFitnessCalculator(
 
         # 1. Train the models
         for i, model_trainer in enumerate(self.model_trainer_list):
-            model_trainer.train_model()
             model = model_trainer.get_model()
             if i == 0:
                 self._drag_model_trainer = model_trainer
-                self._drag_model = model
+                self._drag_model = model[0]
             elif i == 1:
                 self._avg_model_trainer = model_trainer
-                self._avg_temp_model = model
+                self._avg_temp_model = model[1]
             elif i == 2:
                 self._max_model_trainer = model_trainer
-                self._max_temp_model = model
+                self._max_temp_model = model[2]
 
             self.pca: PCA = model_trainer.get_pca()
 
