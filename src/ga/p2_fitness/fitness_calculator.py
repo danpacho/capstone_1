@@ -1,13 +1,16 @@
 from abc import abstractmethod
 from typing import Generic, TypeVar
 
+from src.prediction.model_trainer import ModelTrainer
 from src.ga.chromosome.chromosome import Chromosome
 
 
 ChromosomeType = TypeVar("ChromosomeType", bound=Chromosome)
 
+ModelTrainerType = TypeVar("ModelTrainerType", bound=tuple[ModelTrainer, ...])
 
-class FitnessCalculator(Generic[ChromosomeType]):
+
+class FitnessCalculator(Generic[ChromosomeType, ModelTrainerType]):
     """
     FitnessCalculator class
     """
@@ -15,17 +18,21 @@ class FitnessCalculator(Generic[ChromosomeType]):
     def __init__(
         self,
         fitness_method_name: str,
+        model_trainer_list: ModelTrainerType,
         criteria_label_list: list[str],
         criteria_weight_list: list[float],
     ):
         """
         Args:
             fitness_method_name (`str`): Name of the fitness method
+            model_trainer_list (`ModelTrainerType`): List of model trainers
             criteria_label_list (`list[str]`): List of criteria labels
             criteria_weight_list (`list[float]`): List of criteria weights
         """
         self.fitness_method_name = fitness_method_name
         self.criteria_label_list = criteria_label_list
+        self.model_trainer_list = model_trainer_list
+
         for weight in criteria_weight_list:
             if weight <= 0:
                 raise ValueError("Criteria weight should be greater than or equal to 0")

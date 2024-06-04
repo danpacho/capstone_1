@@ -64,10 +64,9 @@ GRID_BOUND = (
     (-GRID_WIDTH / 2, GRID_WIDTH / 2),
 )
 
-# ----------------- Define the GA MODEL     -----------------
+# ----------------- Define the GA MODEL    -----------------
 
 gpr_kernel = ConstantKernel(1.0, (1e-2, 1e2)) * RBF(1.0, (1e-2, 1e2))
-
 gpr_model_trainer = GPRModelTrainer(
     gpr_kernel=gpr_kernel,
     gpr_drag_config=(10, 1e-5),
@@ -91,10 +90,6 @@ rf_model_trainer = RfModelTrainer(
     desired_variance=0.9,
 )
 
-rf_model = rf_model_trainer.get_model()
-gpr_model = gpr_model_trainer.get_model()
-pca = gpr_model_trainer.get_pca()
-
 # ----------------- Define the GA PIPELINES -----------------
 
 suite1 = GAPipeline[VentHole](
@@ -105,8 +100,11 @@ suite1 = GAPipeline[VentHole](
     crossover_behavior=OnePointCrossover(),
     selector_behavior=TournamentSelectionFilter(tournament_size=15),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_model,
-        pca=pca,
+        model_trainer_tuple=(
+            gpr_model_trainer,  # Drag model
+            gpr_model_trainer,  # Avg temp model
+            gpr_model_trainer,  # Max temp model
+        ),
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
         drag_std_criterion=DRAG_STD_CRITERION,
@@ -142,8 +140,11 @@ suite2 = GAPipeline[VentHole](
     crossover_behavior=TwoPointCrossover(),
     selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_model,
-        pca=pca,
+        model_trainer_tuple=(
+            gpr_model_trainer,  # Drag model
+            gpr_model_trainer,  # Avg temp model
+            gpr_model_trainer,  # Max temp model
+        ),
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
         drag_std_criterion=DRAG_STD_CRITERION,
@@ -179,8 +180,11 @@ suite2_2 = GAPipeline[VentHole](
     crossover_behavior=TwoPointCrossover(),
     selector_behavior=ElitismSelectionFilter(elitism_criterion=0.9),
     fitness_calculator=VentFitnessCalculator(
-        pca=pca,
-        gpr_models=gpr_model,
+        model_trainer_tuple=(
+            gpr_model_trainer,  # Drag model
+            gpr_model_trainer,  # Avg temp model
+            gpr_model_trainer,  # Max temp model
+        ),
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
         drag_std_criterion=DRAG_STD_CRITERION,
@@ -216,8 +220,11 @@ suite3 = GAPipeline[VentHole](
     crossover_behavior=UniformCrossover(),
     selector_behavior=RouletteWheelSelectionFilter(roulette_pointer_count=4),
     fitness_calculator=VentFitnessCalculator(
-        gpr_models=gpr_model,
-        pca=pca,
+        model_trainer_tuple=(
+            gpr_model_trainer,  # Drag model
+            gpr_model_trainer,  # Avg temp model
+            gpr_model_trainer,  # Max temp model
+        ),
         criteria_weight_list=CRITERIA_WEIGHT,
         drag_criterion=DRAG_CRITERION,
         drag_std_criterion=DRAG_STD_CRITERION,

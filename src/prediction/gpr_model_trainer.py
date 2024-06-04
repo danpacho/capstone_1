@@ -44,6 +44,7 @@ class GPRModelTrainer(
             grid_bound_width,
             grid_bound,
             desired_variance,
+            can_calculate_std=True,
         )
 
         self.kernel = gpr_kernel

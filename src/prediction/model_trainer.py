@@ -49,7 +49,20 @@ class ModelTrainer(Generic[ModelType]):
         grid_bound_width: float,
         grid_bound: Union[tuple[tuple[float, float], tuple[float, float]], None] = None,
         desired_variance: float = 0.95,
+        can_calculate_std: bool = False,
     ) -> None:
+        """
+        Initializes the ModelTrainer.
+
+        Args:
+            model_name (`str`): Name of the model.
+            grid_scale (`float`): Scale of the grid.
+            grid_resolution (`float`): Resolution of the grid.
+            grid_bound_width (`float`): Width of the grid boundary.
+            grid_bound (`Union[tuple[tuple[float, float], tuple[float, float]], None]`): Boundaries of the grid.
+            desired_variance (`float`): Desired variance for `PCA` dimension reduction level optimization.
+            can_calculate_std (`bool`): Whether the model can calculate the standard deviation.
+        """
         self._box_title(f"Model Trainer: {model_name}")
 
         self.model_name = model_name.lower()
@@ -61,6 +74,8 @@ class ModelTrainer(Generic[ModelType]):
         self.grid_resolution = grid_resolution
         self.grid_bound_width = grid_bound_width
         self.grid_bound = grid_bound
+
+        self.can_calculate_std = can_calculate_std
 
         self.train_config: dict[str, str] = {
             "grid_scale": str(self.grid_scale),
@@ -156,7 +171,7 @@ class ModelTrainer(Generic[ModelType]):
         Args:
             title (str): The title to be printed.
         """
-        log = f"| {title} |"
+        log = f"| [ModelTrainer: {self.model_name}]: {title} |"
         log_len = len(log)
         print("-" * log_len)
         print(log)
@@ -647,7 +662,8 @@ class ModelTrainer(Generic[ModelType]):
             os.path.join(model_train_path, "train_input.npy"),
             train_x_reduction,
         )
-        print("Reduction input saved to train_input.npy")
+        self._box_title("Reduction input saved to train_input.npy")
+
         np.save(
             os.path.join(model_train_path, "train_output.npy"),
             train_y,
