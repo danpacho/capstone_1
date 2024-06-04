@@ -1,6 +1,6 @@
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
-from src.prediction.rf_model_trainer import RandomForestModelTrainer
+from src.prediction.rf_model_trainer import RfModelTrainer
 from src.prediction.gpr_model_trainer import GPRModelTrainer
 from src.ga.chromosome.vent_hole import VentHole
 
@@ -80,7 +80,7 @@ gpr_model_trainer = GPRModelTrainer(
     desired_variance=0.9,
 )
 
-rf_model_trainer = RandomForestModelTrainer(
+rf_model_trainer = RfModelTrainer(
     rf_drag_config=(100, 42),
     rf_max_temp_config=(100, 42),
     rf_avg_temp_config=(100, 42),
