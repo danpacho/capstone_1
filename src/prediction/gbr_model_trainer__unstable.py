@@ -2,9 +2,7 @@
 ModelTrainer class which is responsible for training a Gradient Boosting Regression (GBR) model.
 """
 
-# pylint: disable=import-error
-from xgboost import xgb
-
+from xgboost import xgb  # pylint: disable=import-error
 
 from src.prediction.model_trainer import ModelTrainer
 
