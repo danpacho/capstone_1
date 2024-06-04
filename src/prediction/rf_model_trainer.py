@@ -9,7 +9,7 @@ from src.prediction.model_trainer import ModelTrainer
 # pylint: disable=invalid-name
 
 
-class rfModelTrainer(
+class RfModelTrainer(
     ModelTrainer[
         tuple[
             RandomForestRegressor,
@@ -37,7 +37,7 @@ class rfModelTrainer(
         desired_variance: float = 0.95,
     ) -> None:
         super().__init__(
-            "RF",
+            "Random_Forest",
             grid_scale,
             grid_resolution,
             grid_bound_width,
