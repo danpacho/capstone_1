@@ -171,7 +171,7 @@ class ModelTrainer(Generic[ModelType]):
         Args:
             title (str): The title to be printed.
         """
-        log = f"| {title} |"
+        log = f"| [ModelTrainer: {self.model_name}]: {title} |"
         log_len = len(log)
         print("-" * log_len)
         print(log)
@@ -662,7 +662,8 @@ class ModelTrainer(Generic[ModelType]):
             os.path.join(model_train_path, "train_input.npy"),
             train_x_reduction,
         )
-        print("Reduction input saved to train_input.npy")
+        self._box_title("Reduction input saved to train_input.npy")
+
         np.save(
             os.path.join(model_train_path, "train_output.npy"),
             train_y,
