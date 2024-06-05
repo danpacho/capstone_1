@@ -171,7 +171,7 @@ class ModelTrainer(Generic[ModelType]):
         Args:
             title (str): The title to be printed.
         """
-        log = f"| [ModelTrainer: {self.model_name}]: {title} |"
+        log = f"| [ModelTrainer: ]: {title} |"
         log_len = len(log)
         print("-" * log_len)
         print(log)
