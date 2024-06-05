@@ -1,15 +1,11 @@
-from abc import abstractmethod
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-import numpy as np
 from typing import Generic, TypeVar
 
 ModelType = TypeVar("ModelType")
 
+
 class ModelMetrics(Generic[ModelType]):
-    def __init__(
-            self,
-            test_kit
-        )-> None:
+    def __init__(self, test_kit) -> None:
         """
         Initializes the ModelMetrics.
         """
@@ -19,7 +15,7 @@ class ModelMetrics(Generic[ModelType]):
 
     def drag_metrics(self, drag_pred) -> float:
         return r2_score(self.test_kit[:, 0], drag_pred)
-    
+
     def ave_temp_metrics(self, ave_temp_pred) -> float:
         return mean_squared_error(self.test_kit[:, 1], ave_temp_pred)
 
