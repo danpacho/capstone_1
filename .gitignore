@@ -4,3 +4,4 @@ __pycache__
 __*.json
 store
 model/train
+test.model_trainer(05.JUN.2024. Output).ipynb
