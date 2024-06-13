@@ -7,3 +7,9 @@ model/train
 experiment_01.ipynb
 experiment_test*.ipynb
 experiment_test*.py
+experiment_template.All*.ipynb
+experiment_template.All*.py
+experiment_template.Roul*.ipynb
+experiment_template.Roul*.py
+experiment_template.Tour*.ipynb
+experiment_template.Tour*.py
