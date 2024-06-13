@@ -4,3 +4,6 @@ __pycache__
 __*.json
 store
 model/train
+experiment_01.ipynb
+experiment_test*.ipynb
+experiment_test*.py

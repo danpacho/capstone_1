@@ -254,6 +254,9 @@ class GAPipeline(Generic[ChromosomeType]):
                 fitness_success_chromosomes.append(chromosome)
                 if self.immediate_exit_condition((fitness, biased_fitness)):
                     self._should_stop = True
+                    print(
+                        f"Extraordinary chromosome found {chromosome.label}, stopping the evolution."
+                    )
                     break
 
         self._population = fitness_success_chromosomes
@@ -270,12 +273,16 @@ class GAPipeline(Generic[ChromosomeType]):
                 index_list[(i + 1) % self.population_count]
             ]
 
-            children: ChromosomeType = parent1.crossover(
-                behavior=self.crossover_behavior,
-                other=parent2,
-            )
+            try:
+                children: ChromosomeType = parent1.crossover(
+                    behavior=self.crossover_behavior,
+                    other=parent2,
+                )
+                child_population.append(children)
 
-            child_population.append(children)
+            except Exception as e:
+                print(f"Error at crossover chromosome is skipped: {e}")
+                continue
 
         self._population = child_population
 
@@ -283,8 +290,12 @@ class GAPipeline(Generic[ChromosomeType]):
         for chromosome in self._population:
             random_value = random()
             if random_value < self.mutation_probability:
-                chromosome.mutate_genes()
-                self._mutation_count += 1
+                try:
+                    chromosome.mutate_genes()
+                    self._mutation_count += 1
+                except Exception as e:
+                    print(f"Error at mutation chromosome is skipped: {e}")
+                    continue
 
     @property
     def _terminate_condition(self) -> bool:
@@ -308,7 +319,9 @@ class GAPipeline(Generic[ChromosomeType]):
         # Phase 2: Fitness Calculation
         self._fitness_calculation()
         if self._should_stop:
-            print("Extraordinary chromosome found, stopping the evolution")
+            print(
+                f"Stopping the evolution at generation {self._generation} for extraordinary chromosome."
+            )
             return
 
         if self._terminate_condition is True:

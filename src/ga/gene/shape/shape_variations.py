@@ -87,3 +87,44 @@ def hole_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
         parameter_id_list=["hole_r"],
         parameter_boundary_list=[(2 * scale, 4 * scale)],
     )
+
+
+def ray_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
+    return ShapeGeneParameter(
+        label="RayShape",
+        bbox=bbox,
+        a_f=[
+            lambda p, params: 
+            p[0]<=5
+            and p[0]>= -5
+            and p[1] <= 5
+            and p[1]>=-5
+            and [1] <= params[0]*p[0]+params[1]+params[4]
+            and p[1] <= -params[0]*p[0]+params[1]+params[4]
+            and p[1] >= -params[2]* (p[0]-params[3]) ** 2+params[4]
+            #and p[1] >= 0
+        ],
+        parameter_id_list=["upper_slope", "nose_point", "lower_coefficient","lower_x-intercept", "lower_y-intercept"],
+        parameter_boundary_list=[(1 * scale, 3 * scale), (1 * scale, 3 * scale), (1 * scale, 4 * scale), (1 * scale, 4 * scale), (1 * scale, 2 * scale)],
+    )
+
+def double_parabolic_params(scale: int, resolution: float = 2.0) -> ShapeGeneParameter:
+    bbox = (10 * scale, 10 * scale, scale / resolution)
+    return ShapeGeneParameter(
+        label="DoubleParabolicShape",
+        bbox=bbox,
+        a_f=[
+            lambda p, params: 
+            p[0]<=5
+            and p[0]>= -5
+            and p[1]<=5
+            and p[1]>= -5
+            and p[1] <= -params[1] * (p[0] ** 2) + params[2] + params[3]
+            and p[1] >= -params[0] * ((p[0]+ params[4] ) ** 2) + params[2]
+            #and p[1] >= 0
+        ],
+        parameter_id_list=["lower_coefficient", "upper_coefficient", "lower_y-intercept", "upper_y-intercept_from_lower_y", "lower_x_trans"],
+        parameter_boundary_list=[(1 * scale, 3 * scale), (1 * scale, 3 * scale), (1 * scale, 4 * scale), (1 * scale, 2 * scale), (-5 * scale, 5 * scale)],
+        # 2 <= r_inner <= 6, 7 <= r_outer <= 10
+    )
