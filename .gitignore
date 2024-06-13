@@ -5,3 +5,5 @@ __*.json
 store
 model/train
 test.model_trainer(05.JUN.2024. Output).ipynb
+training_log_theta_DP0001-0800_07.JUN.2024.a.txt
+training_log_theta_DP0001-0741_13.JUN.2024.b.txt

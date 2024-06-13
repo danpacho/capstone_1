@@ -18,6 +18,9 @@ class ModelMetrics(Generic[ModelType]):
 
     def ave_temp_metrics(self, ave_temp_pred) -> float:
         return mean_squared_error(self.test_kit[:, 1], ave_temp_pred)
+    
+    def ave_temp_metrics2(self, ave_temp_pred) -> float:
+        return r2_score(self.test_kit[:, 1], ave_temp_pred)
 
     def max_temp_metrics(self, max_temp_pred) -> float:
         return mean_absolute_error(self.test_kit[:, 2], max_temp_pred)
