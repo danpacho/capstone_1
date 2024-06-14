@@ -1,2 +1,2 @@
-dpset : theta_DP0001-0800
-result : theta_DP0001-0800_07.JUN.2024.a
+dpset : delta_DP0001-0750
+result : delta_DP0001-0750_14.JUN.2024.a
