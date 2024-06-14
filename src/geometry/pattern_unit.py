@@ -350,8 +350,10 @@ class PatternTransformation:
 
         # Fix invalid > phi
         min_phi = self.min_phi(h) + safe_delta
+        count = np.pi * 2 // min_phi
+        count = max(count, 1)
 
-        self.phi = min_phi
+        self.phi = np.pi * 2 / count
         if log:
             print(
                 f"[PatternTransformation]: Fixing rotation angle to {self.phi_angle} deg"
@@ -505,27 +507,69 @@ class PatternTransformationMatrix:
 
         if self.pattern_transformation.pattern_type == "circular":
             rotation_group: list[float] = [
-                (i + 1) * self.pattern_transformation.phi
-                for i in range(int(2 * np.pi / self.pattern_transformation.phi) - 1)
+                (i) * self.pattern_transformation.phi
+                for i in range(ceil(2 * np.pi / self.pattern_transformation.phi))
             ]
-            for angle in rotation_group:
-                T_rotated = Transformer.rotate(T_x_positive, angle)
-                T_rotated = np.array([V.vec3(dx, dy, angle) for dx, dy, _ in T_rotated])
-                T_rotation = V.combine_mat_v3(T_rotation, T_rotated)
+            for rot_angle in rotation_group:
+                T_rotated_group = Transformer.rotate(T_x_positive, rot_angle)
+                T_rotated_group = np.array(
+                    [V.vec3(dx, dy, rot_angle) for dx, dy, _ in T_rotated_group]
+                )
+                T_rotation = V.combine_mat_v3(T_rotation, T_rotated_group)
+
+            # Collect L groups
+            T_matrix = V.combine_mat_v3(T_matrix, T_x_positive)
+            T_matrix = V.combine_mat_v3(T_matrix, T_rotation)
+            T_matrix = V.combine_mat_v3(T_matrix, T_translation)
 
         elif self.pattern_transformation.pattern_type == "corn":
-            corn_rotation_group: list[float] = []
-            for i in range(round((self.pattern_transformation.rot_count) / 2)):
-                corn_rotation_group.extend(
-                    [
-                        (i + 1) * self.pattern_transformation.phi,
-                        -1 * (i + 1) * self.pattern_transformation.phi,
-                    ]
-                )
-            for angle in corn_rotation_group:
-                T_rotated = Transformer.rotate(T_x_positive, angle)
-                T_rotated = np.array([V.vec3(dx, dy, angle) for dx, dy, _ in T_rotated])
-                T_rotation = V.combine_mat_v3(T_rotation, T_rotated)
+            root_rot_count = round(self.pattern_transformation.rot_count / 2)
+
+            T_corn = V.initialize_matrix_3d()
+
+            for depth in range(positive_pattern_count):
+                corn_rotation_group: list[float] = []
+                curr_depth_rot_count = root_rot_count + depth
+                curr_phi = self.pattern_transformation.phi / (depth + 1)
+
+                for i in range(curr_depth_rot_count):
+                    corn_rotation_group.extend(
+                        [
+                            (i + 1) * curr_phi,
+                        ]
+                    )
+
+                for rot in corn_rotation_group:
+                    T_x_curr = V.initialize_matrix_3d()
+                    T_x_curr = V.append_v3(
+                        T_x_curr, V.vec3((depth) * self.p_step_x + base_step, 0, 0)
+                    )
+
+                    T_rotated = Transformer.rotate(T_x_curr, rot)
+                    T_rotated_group = np.array(
+                        [V.vec3(dx, dy, rot) for dx, dy, _ in T_rotated]
+                        + [V.vec3(dx, -dy, -rot) for dx, dy, _ in T_rotated]
+                    )
+
+                    T_corn = V.combine_mat_v3(T_corn, T_x_curr)
+                    T_corn = V.combine_mat_v3(T_corn, T_rotated_group)
+
+            # Translate Corn T matrix into center by min_x, max_x, min_y, max_y
+            corn_x_min = np.min(T_corn[:, 0])
+            corn_x_max = np.max(T_corn[:, 0])
+            corn_y_min = np.min(T_corn[:, 1])
+            corn_y_max = np.max(T_corn[:, 1])
+
+            translate_coord = V.vec2(
+                -(corn_x_min + corn_x_max) / 2,
+                -(corn_y_min + corn_y_max) / 2,
+            )
+
+            T_corn = Transformer.translate_x(T_corn, translate_coord[0])
+            T_corn = Transformer.translate_y(T_corn, translate_coord[1])
+
+            # Collect L groups
+            T_matrix = V.combine_mat_v3(T_matrix, T_corn)
 
         elif self.pattern_transformation.pattern_type == "grid":
             # X-axis mirror
@@ -547,10 +591,10 @@ class PatternTransformationMatrix:
                     T_translation, Transformer.translate_y(T_x_positive, negative_dy)
                 )
 
-        # Collect L groups
-        T_matrix = V.combine_mat_v3(T_matrix, T_x_positive)
-        T_matrix = V.combine_mat_v3(T_matrix, T_rotation)
-        T_matrix = V.combine_mat_v3(T_matrix, T_translation)
+            # Collect L groups
+            T_matrix = V.combine_mat_v3(T_matrix, T_x_positive)
+            T_matrix = V.combine_mat_v3(T_matrix, T_rotation)
+            T_matrix = V.combine_mat_v3(T_matrix, T_translation)
 
         self.T_matrix = T_matrix
 
