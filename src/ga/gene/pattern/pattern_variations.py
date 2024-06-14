@@ -31,7 +31,7 @@ def circular_params(scale: int) -> PatternGeneParameter:
 def corn_params(scale: int) -> PatternGeneParameter:
     return PatternGeneParameter(
         pattern_type="corn",
-        label="CornerTransformation",
+        label="CornTransformation",
         parameter_boundary_list=[
             (7.5 * scale, 15 * scale),  # di
             (0.5 * scale, 10.0 * scale),  # dx

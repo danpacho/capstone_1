@@ -40,6 +40,7 @@ class GAPipeline(Generic[ChromosomeType]):
         mutation_probability: float,
         immediate_exit_condition: Callable[[tuple[float, float]], bool],
         check_children_fitness: bool = True,
+        use_cache: bool = True,
     ) -> None:
         """
         Args:
@@ -54,9 +55,11 @@ class GAPipeline(Generic[ChromosomeType]):
             mutation_probability (`float`): Mutation probability, in the range of `[0, 1]`, if `0.5%` then `0.005`
             immediate_exit_condition: Immediate exit condition, (fitness, biased_fitness) -> bool
             check_children_fitness (`bool`): Check the children fitness
+            use_cache (`bool`): Use cache for the genetic algorithm
         """
         self.suite_name = suite_name
         self.check_children_fitness = check_children_fitness
+        self.use_cache = use_cache
 
         self.suite_min_chromosome = suite_min_chromosome
 
@@ -113,15 +116,17 @@ class GAPipeline(Generic[ChromosomeType]):
         """
         return {
             "suite_name": self.suite_name,
+            "generation": self._generation,
+            "population_count": self.population_count,
+            "mutation_count": self._mutation_count,
+            "immediate_exit": self._should_stop,
+            "initial_population": self.population_initializer.population_size,
+            "unique_population_count": self.unique_population_count,
             "suite_max_count": self.suite_max_count,
             "suite_min_population": self.suite_min_population,
             "suite_min_chromosome": self.suite_min_chromosome,
-            "immediate_exit": self._should_stop,
-            "generation": self._generation,
-            "initial_population": self.population_initializer.population_size,
-            "population_count": self.population_count,
-            "unique_population_count": self.unique_population_count,
-            "mutation_count": self._mutation_count,
+            "use_cache": str(self.use_cache),
+            "check_children_fitness": str(self.check_children_fitness),
             "mutation_probability": self.mutation_probability,
             "fitness_calculator": self.fitness_calculator.fitness_method_name,
             "selector_behavior": self.selector_behavior.selection_strategy_name,
@@ -229,7 +234,7 @@ class GAPipeline(Generic[ChromosomeType]):
 
             success, fitness, biased_fitness, calc_result = (
                 self._gen_calc_result[gene_id]
-                if gene_id in self._gen_calc_result
+                if gene_id in self._gen_calc_result and self.use_cache
                 else (self.fitness_calculator.judge_fitness(chromosome))
             )
 
@@ -254,6 +259,9 @@ class GAPipeline(Generic[ChromosomeType]):
                 fitness_success_chromosomes.append(chromosome)
                 if self.immediate_exit_condition((fitness, biased_fitness)):
                     self._should_stop = True
+                    print(
+                        f"Extraordinary chromosome found {chromosome.label}, stopping the evolution."
+                    )
                     break
 
         self._population = fitness_success_chromosomes
@@ -270,12 +278,16 @@ class GAPipeline(Generic[ChromosomeType]):
                 index_list[(i + 1) % self.population_count]
             ]
 
-            children: ChromosomeType = parent1.crossover(
-                behavior=self.crossover_behavior,
-                other=parent2,
-            )
+            try:
+                children: ChromosomeType = parent1.crossover(
+                    behavior=self.crossover_behavior,
+                    other=parent2,
+                )
+                child_population.append(children)
 
-            child_population.append(children)
+            except Exception as e:
+                print(f"Error at crossover chromosome is skipped: {e}")
+                continue
 
         self._population = child_population
 
@@ -283,8 +295,12 @@ class GAPipeline(Generic[ChromosomeType]):
         for chromosome in self._population:
             random_value = random()
             if random_value < self.mutation_probability:
-                chromosome.mutate_genes()
-                self._mutation_count += 1
+                try:
+                    chromosome.mutate_genes()
+                    self._mutation_count += 1
+                except Exception as e:
+                    print(f"Error at mutation chromosome is skipped: {e}")
+                    continue
 
     @property
     def _terminate_condition(self) -> bool:
@@ -308,7 +324,9 @@ class GAPipeline(Generic[ChromosomeType]):
         # Phase 2: Fitness Calculation
         self._fitness_calculation()
         if self._should_stop:
-            print("Extraordinary chromosome found, stopping the evolution")
+            print(
+                f"Stopping the evolution at generation {self._generation} for extraordinary chromosome."
+            )
             return
 
         if self._terminate_condition is True:
