@@ -45,6 +45,7 @@ class AdaModelTrainer(
 
     def train_model(
         self,
+        test_boundary=None,
     ) -> tuple[AdaBoostRegressor, AdaBoostRegressor, AdaBoostRegressor]:
         """
         Trains a AdaBoostRegressor model.
@@ -53,7 +54,9 @@ class AdaModelTrainer(
             - tuple[AdaBoostRegressor, AdaBoostRegressor, AdaBoostRegressor]: The trained ada model.
             - `(ada for drag, ada for average temperature, ada for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         ada_drag = AdaBoostRegressor(
             n_estimators=self.drag_config[0], random_state=self.drag_config[1]

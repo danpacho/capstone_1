@@ -51,6 +51,7 @@ class EnsemModelTrainer(
 
     def train_model(
         self,
+        test_boundary=None,
     ) -> tuple[BaggingRegressor, BaggingRegressor, BaggingRegressor]:
         """
         Trains a Ensemble (ensem) model.
@@ -59,7 +60,9 @@ class EnsemModelTrainer(
             - tuple[BaggingRegressor, BaggingRegressor, BaggingRegressor]: The trained ensem model.
             - `(ensem for drag, ensem for average temperature, ensem for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         ensem_drag = BaggingRegressor(
             estimator=DecisionTreeRegressor(random_state=self.drag_config[0]),

@@ -2,6 +2,7 @@
 ModelTrainer class which is responsible for training a Gradient Boosting Regression (GBR) model.
 """
 
+from typing import Union
 from xgboost import xgb  # pylint: disable=no-name-in-module
 
 from src.prediction.model_trainer import ModelTrainer
@@ -41,9 +42,7 @@ class GBRModelTrainer(ModelTrainer[tuple["xgb", "xgb", "xgb"]]):
         self.avg_temp_config = gbr_avg_temp_config
         self.max_temp_config = gbr_max_temp_config
 
-    def train_model(
-        self,
-    ) -> tuple[xgb, xgb, xgb]:
+    def train_model(self, test_boundary=None) -> tuple[xgb, xgb, xgb]:
         """
         Trains a Gradient Boosting Regressor model.
 
@@ -51,7 +50,9 @@ class GBRModelTrainer(ModelTrainer[tuple["xgb", "xgb", "xgb"]]):
             - tuple[GradientBoostingRegressor, GradientBoostingRegressor, GradientBoostingRegressor]: The trained GPR model.
             - `(gbr for drag, gbr for average temperature, gbr for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         gbr_drag = xgb(
             n_estimators=self.drag_config[0],

@@ -50,6 +50,7 @@ class EtrModelTrainer(
 
     def train_model(
         self,
+        test_boundary=None,
     ) -> tuple[ExtraTreesRegressor, ExtraTreesRegressor, ExtraTreesRegressor]:
         """
         Trains a Extra Trees Regressor (ETR) model.
@@ -58,7 +59,9 @@ class EtrModelTrainer(
             - tuple[ExtraTreesRegressor, ExtraTreesRegressor, ExtraTreesRegressor]: The trained etr model.
             - `(etr for drag, etr for average temperature, etr for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         etr_drag = ExtraTreesRegressor(
             n_estimators=self.drag_config[0], random_state=self.drag_config[1]

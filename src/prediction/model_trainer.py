@@ -3,7 +3,7 @@ ModelTrainer, a class that trains a model based on the provided data.
 """
 
 from abc import abstractmethod
-from typing import Generic, Tuple, TypeVar, Union
+from typing import Generic, Literal, Tuple, TypeVar, Union
 
 import hashlib
 import json
@@ -98,6 +98,7 @@ class ModelTrainer(Generic[ModelType]):
     @abstractmethod
     def train_model(
         self,
+        test_boundary: Union[tuple[int, int], None] = None,
     ) -> None:
         """
         Trains the model.
@@ -280,6 +281,7 @@ class ModelTrainer(Generic[ModelType]):
     def _extract_hole_BL_origin_coordinates(
         self,
         point_data: np.ndarray[np.float64],
+        point_range_info: tuple[Literal["test", "train"], Union[tuple[int, int], None]],
         grid_w: float,
         scale: float,
         result_entry: set[int],
@@ -297,13 +299,27 @@ class ModelTrainer(Generic[ModelType]):
             dict[int, list[tuple[float, float]]]: Hole BL origin coordinates.
         """
         result_table = {}
+
+        point_type, point_range = point_range_info
+        if point_range is None:
+            point_range = (0, len(point_data) - 1)
+
+        if point_type == "test":
+            for i, point in enumerate(point_data):
+                if point_range[0] <= i <= point_range[1]:
+                    if i in result_entry:
+                        result_table[i] = self._extract_dot_coordinates(
+                            point_data[i], grid_w=grid_w, scale=scale
+                        )
+            return result_table
+
         for i, point in enumerate(point_data):
-            if i not in result_entry:
-                continue
-            dot_coordinates = self._extract_dot_coordinates(
-                point, grid_w=grid_w, scale=scale
-            )
-            result_table[i] = dot_coordinates
+            if i > point_range[1] or i < point_range[0]:
+                if i in result_entry:
+                    result_table[i] = self._extract_dot_coordinates(
+                        point, grid_w=grid_w, scale=scale
+                    )
+
         return result_table
 
     def _create_vent_hole_matrix(
@@ -589,6 +605,7 @@ class ModelTrainer(Generic[ModelType]):
 
         test_origin, test_input_matrix, test_output_matrix = self._transform_data(
             point_data=self.test_set,
+            point_range_info=("test", test_boundary),
             skip_pca_recalculation=True,
             external_pca=origin_pca,
         )
@@ -597,6 +614,7 @@ class ModelTrainer(Generic[ModelType]):
     def _transform_data(
         self,
         point_data: np.ndarray[np.float64],
+        point_range_info: tuple[Literal["test", "train"], Union[tuple[int, int], None]],
         skip_pca_recalculation: bool = False,
         external_pca: Union[PCA, None] = None,
     ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64], np.ndarray[np.float64]]:
@@ -606,12 +624,13 @@ class ModelTrainer(Generic[ModelType]):
         hole_origin_table: dict[int, list[tuple[float, float]]] = (
             self._extract_hole_BL_origin_coordinates(
                 point_data=point_data,
+                point_range_info=point_range_info,
                 grid_w=self.grid_bound_width,
                 scale=self.grid_scale,
                 result_entry=result_entry,
             )
         )
-        vent_hole_whole_matrix_table: dict[int, np.ndarray[np.float64]] = (
+        vent_hole_hole_matrix_table: dict[int, np.ndarray[np.float64]] = (
             self._create_total_vent_hole_matrix_from_origin_table(
                 hold_origin_table=hole_origin_table,
                 scale=self.grid_scale,
@@ -621,7 +640,7 @@ class ModelTrainer(Generic[ModelType]):
         )
         vent_hole_gpr_input_matrix_table: dict[int, np.ndarray[np.float64]] = (
             self._create_vent_hole_input_matrix(
-                vent_hole_total_matrix_table=vent_hole_whole_matrix_table,
+                vent_hole_total_matrix_table=vent_hole_hole_matrix_table,
                 resolution=self.grid_resolution,
                 scale=self.grid_scale,
                 bound=self.grid_bound,
@@ -698,6 +717,7 @@ class ModelTrainer(Generic[ModelType]):
 
         train_x_original, train_x_reduction, train_y = self._transform_data(
             point_data=self._get_trainset(test_boundary=test_boundary),
+            point_range_info=("train", test_boundary),
         )
 
         with open(

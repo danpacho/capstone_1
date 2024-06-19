@@ -54,6 +54,7 @@ class GPRModelTrainer(
 
     def train_model(
         self,
+        test_boundary=None,
     ) -> tuple[
         GaussianProcessRegressor, GaussianProcessRegressor, GaussianProcessRegressor
     ]:
@@ -64,7 +65,9 @@ class GPRModelTrainer(
             - tuple[GaussianProcessRegressor, GaussianProcessRegressor, GaussianProcessRegressor]: The trained GPR model.
             - `(GPR for drag, GPR for average temperature, GPR for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         gpr_drag = GaussianProcessRegressor(
             kernel=self.kernel,

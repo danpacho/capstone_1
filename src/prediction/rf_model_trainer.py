@@ -51,6 +51,7 @@ class RfModelTrainer(
 
     def train_model(
         self,
+        test_boundary=None,
     ) -> tuple[RandomForestRegressor, RandomForestRegressor, RandomForestRegressor]:
         """
         Trains a Random Forrest Regressor model.
@@ -59,7 +60,9 @@ class RfModelTrainer(
             - tuple[RandomForrestRegressor, RandomForrestRegressor, RandomForrestRegressor]: The trained GPR model.
             - `(Random_Forest for drag, Random_Forest for average temperature, Random_Forest for maximum temperature)`
         """
-        input_matrix, output_matrix = self.get_train_set(use_original_input=False)
+        input_matrix, output_matrix = self.get_train_set(
+            use_original_input=False, test_boundary=test_boundary
+        )
 
         rf_drag = RandomForestRegressor(
             n_estimators=self.drag_config[0],
