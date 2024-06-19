@@ -87,6 +87,9 @@ class ModelTrainer(Generic[ModelType]):
         seed_str = "".join(self.train_config.values())
         self.train_id: str = self._generate_uuid_from_seed(seed_str)
 
+        self.train_set: Union[None, np.ndarray[np.float64]] = None
+        self.test_set: Union[None, np.ndarray[np.float64]] = None
+
         self._pca: PCA = None
         self.desired_variance = desired_variance
 
@@ -177,18 +180,43 @@ class ModelTrainer(Generic[ModelType]):
         print(log)
         print("-" * log_len)
 
-    def _get_dp_set(
+    def _get_trainset(
         self,
+        test_boundary: Union[tuple[float, float], None] = None,
     ) -> np.ndarray[np.float64]:
         """
-        Retrieves the point data list from a CSV file.
+        Retrieves the training data set.
+
+        Args:
+            test_boundary (Union[tuple[float, float], None]): Boundary of the test set.
+            if provided, the test set will be extracted from the training set.
 
         Returns:
-            np.ndarray[np.float64]: The point data list.
+            np.ndarray[np.float64]: The training data set.
+
+        Examples:
+            >>> trainer._get_trainset()
+            >>> trainer._get_trainset(test_boundary=(0, 10))
         """
+        if self.train_set is not None and self.test_set is not None:
+            return self.train_set
+
         self._box_title("Getting point data list")
-        dp_set = np.loadtxt(os.path.join(self.data_path, "dpset.csv"), delimiter=",")
-        return dp_set
+        self.train_set = np.loadtxt(
+            os.path.join(self.data_path, "dpset.csv"), delimiter=","
+        )
+
+        if test_boundary is not None:
+            test_set = self.train_set[test_boundary[0] : test_boundary[1] + 1]
+            self.train_set = np.concatenate(
+                (
+                    self.train_set[: test_boundary[0]],
+                    self.train_set[test_boundary[1] + 1 :],
+                )
+            )
+            self.test_set = test_set
+
+        return self.train_set
 
     def _extract_dot_coordinates(
         self,
@@ -251,6 +279,7 @@ class ModelTrainer(Generic[ModelType]):
 
     def _extract_hole_BL_origin_coordinates(
         self,
+        point_data: np.ndarray[np.float64],
         grid_w: float,
         scale: float,
         result_entry: set[int],
@@ -262,39 +291,11 @@ class ModelTrainer(Generic[ModelType]):
             grid_w (float): The grid width.
             scale (float): The scale factor.
             result_entry (set[int]): Set of result entries.
+            test_boundary (Union[tuple[float, float], None]): Boundary of the test set.
 
         Returns:
             dict[int, list[tuple[float, float]]]: Hole BL origin coordinates.
         """
-        point_data = self._get_dp_set()
-        result_table = {}
-        for i, point in enumerate(point_data):
-            if i not in result_entry:
-                continue
-            dot_coordinates = self._extract_dot_coordinates(
-                point, grid_w=grid_w, scale=scale
-            )
-            result_table[i] = dot_coordinates
-        return result_table
-
-    def _extract_hole_BL_origin_coordinates(
-        self,
-        grid_w: float,
-        scale: float,
-        result_entry: set[int],
-    ) -> dict[int, list[tuple[float, float]]]:
-        """
-        Extracts hole BL origin coordinates based on the grid width and scale.
-
-        Args:
-            grid_w (float): The grid width.
-            scale (float): The scale factor.
-            result_entry (set[int]): Set of result entries.
-
-        Returns:
-            dict[int, list[tuple[float, float]]]: Hole BL origin coordinates.
-        """
-        point_data = self._get_dp_set()
         result_table = {}
         for i, point in enumerate(point_data):
             if i not in result_entry:
@@ -435,7 +436,7 @@ class ModelTrainer(Generic[ModelType]):
 
         return gpr_input.reshape(1, -1)[0] if flat else gpr_input.reshape(1, -1)
 
-    def _create_vent_hole_gpr_input_matrix(
+    def _create_vent_hole_input_matrix(
         self,
         vent_hole_total_matrix_table: dict[int, np.ndarray[np.float64]],
         resolution: float,
@@ -444,7 +445,7 @@ class ModelTrainer(Generic[ModelType]):
         flat: bool = False,
     ) -> dict[int, np.ndarray[np.float64]]:
         """
-        Creates a GPR input matrix for the vent holes.
+        Creates a input matrix for the vent holes.
 
         Args:
             vent_hole_whole_matrix_table (dict[int, np.ndarray[np.float64]]): Table of vent hole matrices.
@@ -507,6 +508,8 @@ class ModelTrainer(Generic[ModelType]):
         self,
         vent_hole_matrix_table: dict[int, np.ndarray],
         result_table: dict[int, Tuple[float, float, float]],
+        skip_pca_recalculation: bool = False,
+        external_pca: Union[PCA, None] = None,
     ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64], np.ndarray[np.float64]]:
         """
         Creates a GPR training set.
@@ -524,14 +527,18 @@ class ModelTrainer(Generic[ModelType]):
         input_matrix = np.vstack(input_matrix)
         output_matrix = np.vstack(output_matrix)
 
-        self._create_optimized_pca(input_matrix, output_matrix)
+        if not skip_pca_recalculation:
+            self._create_optimized_pca(input_matrix, output_matrix)
 
         # Apply PCA -> dimension reduction
-        gpr_dim_reduction_input_matrix = self._pca.fit_transform(input_matrix)
+        if external_pca is not None:
+            dim_reduction = external_pca.transform(input_matrix)
+        else:
+            dim_reduction = self._pca.fit_transform(input_matrix)
 
         return (
             input_matrix,
-            gpr_dim_reduction_input_matrix,
+            dim_reduction,
             output_matrix,
         )
 
@@ -562,9 +569,77 @@ class ModelTrainer(Generic[ModelType]):
 
         return parsed_result
 
+    def get_test_set(
+        self,
+        test_boundary: tuple[int, int],
+        origin_pca: PCA,
+    ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64], np.ndarray[np.float64]]:
+        """
+        Retrieves the test set.
+
+        Returns:
+            (test_origin, test_input_matrix, test_output_matrix): Test set.
+
+        Args:
+            test_boundary (Union[tuple[float, float], None]): Boundary of the test set.
+        """
+
+        if self.test_set is None:
+            self._get_trainset(test_boundary=test_boundary)
+
+        test_origin, test_input_matrix, test_output_matrix = self._transform_data(
+            point_data=self.test_set,
+            skip_pca_recalculation=True,
+            external_pca=origin_pca,
+        )
+        return test_origin, test_input_matrix, test_output_matrix
+
+    def _transform_data(
+        self,
+        point_data: np.ndarray[np.float64],
+        skip_pca_recalculation: bool = False,
+        external_pca: Union[PCA, None] = None,
+    ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64], np.ndarray[np.float64]]:
+        result_table: dict[int, Tuple[float, float, float]] = self._parse_output()
+        result_entry: set[int] = set(result_table.keys())
+
+        hole_origin_table: dict[int, list[tuple[float, float]]] = (
+            self._extract_hole_BL_origin_coordinates(
+                point_data=point_data,
+                grid_w=self.grid_bound_width,
+                scale=self.grid_scale,
+                result_entry=result_entry,
+            )
+        )
+        vent_hole_whole_matrix_table: dict[int, np.ndarray[np.float64]] = (
+            self._create_total_vent_hole_matrix_from_origin_table(
+                hold_origin_table=hole_origin_table,
+                scale=self.grid_scale,
+                resolution=self.grid_resolution,
+                grid_w=self.grid_bound_width,
+            )
+        )
+        vent_hole_gpr_input_matrix_table: dict[int, np.ndarray[np.float64]] = (
+            self._create_vent_hole_input_matrix(
+                vent_hole_total_matrix_table=vent_hole_whole_matrix_table,
+                resolution=self.grid_resolution,
+                scale=self.grid_scale,
+                bound=self.grid_bound,
+            )
+        )
+        x_original, x_reduction, y = self._create_training_set(
+            vent_hole_matrix_table=vent_hole_gpr_input_matrix_table,
+            result_table=result_table,
+            skip_pca_recalculation=skip_pca_recalculation,
+            external_pca=external_pca,
+        )
+
+        return x_original, x_reduction, y
+
     def get_train_set(
         self,
         use_original_input: bool = False,
+        test_boundary: Union[tuple[int, int], None] = None,
     ) -> Union[
         Tuple[
             np.ndarray[np.float64],
@@ -581,11 +656,17 @@ class ModelTrainer(Generic[ModelType]):
 
         Args:
             use_original_input (bool): Whether to use the original input.
+            test_boundary (Union[tuple[int, int], None]): Boundary of the test set.
 
         Returns:
             `(train_x_original, train_x_reduction, train_y)`: Training set with original input.
             or
             `(train_x_reduction, train_y)`: Training set.
+
+        Examples:
+            >>> trainer.get_train_set()
+            >>> trainer.get_train_set(use_original_input=True)
+            >>> trainer.get_train_set(test_boundary=(0, 10))
         """
         model_train_path = os.path.join(self.train_path, self.train_id)
 
@@ -615,35 +696,8 @@ class ModelTrainer(Generic[ModelType]):
         self._box_title("Training set not found, creating a new one")
         os.makedirs(model_train_path, exist_ok=False)
 
-        result_table: dict[int, Tuple[float, float, float]] = self._parse_output()
-        result_entry: set[int] = set(result_table.keys())
-
-        hole_origin_table: dict[int, list[tuple[float, float]]] = (
-            self._extract_hole_BL_origin_coordinates(
-                grid_w=self.grid_bound_width,
-                scale=self.grid_scale,
-                result_entry=result_entry,
-            )
-        )
-        vent_hole_whole_matrix_table: dict[int, np.ndarray[np.float64]] = (
-            self._create_total_vent_hole_matrix_from_origin_table(
-                hold_origin_table=hole_origin_table,
-                scale=self.grid_scale,
-                resolution=self.grid_resolution,
-                grid_w=self.grid_bound_width,
-            )
-        )
-        vent_hole_gpr_input_matrix_table: dict[int, np.ndarray[np.float64]] = (
-            self._create_vent_hole_gpr_input_matrix(
-                vent_hole_total_matrix_table=vent_hole_whole_matrix_table,
-                resolution=self.grid_resolution,
-                scale=self.grid_scale,
-                bound=self.grid_bound,
-            )
-        )
-        train_x_original, train_x_reduction, train_y = self._create_training_set(
-            vent_hole_matrix_table=vent_hole_gpr_input_matrix_table,
-            result_table=result_table,
+        train_x_original, train_x_reduction, train_y = self._transform_data(
+            point_data=self._get_trainset(test_boundary=test_boundary),
         )
 
         with open(
