@@ -64,7 +64,11 @@ class EtrModelTrainer(
         )
 
         etr_drag = ExtraTreesRegressor(
-            n_estimators=self.drag_config[0], random_state=self.drag_config[1]
+            n_estimators=self.drag_config[0],
+            random_state=self.drag_config[1],
+            max_depth=30,
+            min_samples_leaf=4,
+            min_samples_split=2,
         )
         etr_avg_temp = ExtraTreesRegressor(
             n_estimators=self.avg_temp_config[0], random_state=self.avg_temp_config[1]
