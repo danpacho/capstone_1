@@ -76,6 +76,7 @@ class VentFitnessCalculator(
 
         # 1. Train the models
         for i, model_trainer in enumerate(self.model_trainer_list):
+            model_trainer.train_model([0, 0])
             model = model_trainer.get_model()
             if i == 0:
                 self._drag_model_trainer = model_trainer
