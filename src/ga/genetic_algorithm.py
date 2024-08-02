@@ -6,8 +6,6 @@ from src.ga.chromosome.vent_hole import VentHole
 
 from src.ga.gene.shape.shape_variations import (
     circle_params,
-    donut_params,
-    hole_params,
     trapezoid_params,
     triangle_params,
     wing_params,
@@ -123,9 +121,7 @@ suite1 = GAPipeline[VentHole](
         pattern_gene_pool=[circular_params, corn_params, grid_params],
         shape_gene_pool=[
             circle_params,
-            donut_params,
             wing_params,
-            hole_params,
             trapezoid_params,
             triangle_params,
         ],
@@ -163,9 +159,9 @@ suite2 = GAPipeline[VentHole](
         pattern_gene_pool=[circular_params],
         shape_gene_pool=[
             circle_params,
-            # donut_params,
+            #
             # wing_params,
-            # hole_params,
+            #
             # trapezoid_params,
             # triangle_params,
         ],
@@ -203,9 +199,9 @@ suite2_2 = GAPipeline[VentHole](
         pattern_gene_pool=[circular_params, corn_params, grid_params],
         shape_gene_pool=[
             circle_params,
-            # donut_params,
+            #
             # wing_params,
-            # hole_params,
+            #
             # trapezoid_params,
             # triangle_params,
         ],
@@ -243,9 +239,7 @@ suite3 = GAPipeline[VentHole](
         pattern_gene_pool=[circular_params, corn_params, grid_params],
         shape_gene_pool=[
             circle_params,
-            donut_params,
             wing_params,
-            hole_params,
             trapezoid_params,
             triangle_params,
         ],
