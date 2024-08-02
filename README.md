@@ -82,7 +82,7 @@ Optimize **vent hole(outlet) pattern** for **reducing the [cooling drag](https:/
 
 3. Install required packages
     ```bash
-    pip3 install -r requirements.txt
+    pip3 install -r packages.txt
     ```
 
 4. Run the main script
