@@ -296,7 +296,7 @@ class ModelTrainer(Generic[ModelType]):
             test_boundary (Union[tuple[float, float], None]): Boundary of the test set.
 
         Returns:
-            dict[int, list[tuple[float, float]]]: Hole BL origin coordinates.
+            coords (dict[int, list[tuple[float, float]]]): Hole BL origin coordinates
         """
         result_table = {}
 
@@ -339,7 +339,7 @@ class ModelTrainer(Generic[ModelType]):
             grid_w (float): Grid width.
 
         Returns:
-            np.ndarray[np.float64]: Vent hole matrix.
+            mat (np.ndarray[np.float64]): Vent hole matrix.
         """
         vent_hole_result_matrix = np.zeros((0, 2), dtype=np.float64)
         for hole_coord in hole_origin_coords:
@@ -410,7 +410,7 @@ class ModelTrainer(Generic[ModelType]):
         flat: bool = False,
     ) -> np.ndarray[np.float64]:
         """
-        Converts the pattern matrix into a GPR input matrix by adding a binary value indicating presence or absence of the pattern.
+        Converts the pattern matrix into a input matrix by adding a binary value indicating presence or absence of the pattern.
 
         Args:
             full_grid_matrix (np.ndarray[np.float64]): Full grid matrix.
@@ -423,34 +423,42 @@ class ModelTrainer(Generic[ModelType]):
         pattern_coord_key = set(
             f"{pattern[0]}_{pattern[1]}" for pattern in pattern_matrix
         )
-        gpr_input = np.empty((0, 3), dtype=np.float64)
-        gpr_coord_key: set[str] = set()
+        origin_input_matrix = np.empty((0, 3), dtype=np.float64)
+        origin_input_coord_key: set[str] = set()
 
         for coord in full_grid_matrix:
             coord_id: str = f"{coord[0]}_{coord[1]}"
-            if coord_id in gpr_coord_key:
+            if coord_id in origin_input_coord_key:
                 continue
-            gpr_coord_key.add(coord_id)
+            origin_input_coord_key.add(coord_id)
 
             FILLED = 1
             EMPTY = -1
 
-            gpr_input = (
-                np.append(gpr_input, [np.array([coord[0], coord[1], FILLED])], axis=0)
+            origin_input_matrix = (
+                np.append(
+                    origin_input_matrix,
+                    [np.array([coord[0], coord[1], FILLED])],
+                    axis=0,
+                )
                 if coord_id in pattern_coord_key
                 else np.append(
-                    gpr_input, [np.array([coord[0], coord[1], EMPTY])], axis=0
+                    origin_input_matrix, [np.array([coord[0], coord[1], EMPTY])], axis=0
                 )
             )
 
-        if full_grid_matrix.shape[0] != gpr_input.shape[0]:
+        if full_grid_matrix.shape[0] != origin_input_matrix.shape[0]:
             raise ValueError(
-                "The shape of the `gpr_input` is not equal to the `full_coord`."
+                "The shape of the `full_grid_matrix` is not equal to the `origin_input`."
             )
-        if gpr_input.shape[1] != 3:
-            raise ValueError("The shape of the `gpr_input` is not equal to 3.")
+        if origin_input_matrix.shape[1] != 3:
+            raise ValueError("The shape of the `origin_input` is not equal to 3.")
 
-        return gpr_input.reshape(1, -1)[0] if flat else gpr_input.reshape(1, -1)
+        return (
+            origin_input_matrix.reshape(1, -1)[0]
+            if flat
+            else origin_input_matrix.reshape(1, -1)
+        )
 
     def _create_vent_hole_input_matrix(
         self,
@@ -473,18 +481,18 @@ class ModelTrainer(Generic[ModelType]):
         Returns:
             dict[int, np.ndarray[np.float64]]: GPR input matrix table for the vent holes.
         """
-        vent_hole_gpr_input_matrix_table = {}
+        vent_hole_input_matrix_table = {}
         full_grid_matrix = Grid(bound=bound, k=1 / resolution).generate_grid(scale)
 
         for key, value in vent_hole_total_matrix_table.items():
-            gpr_input = self._to_trainable_input_matrix(
+            trainable_input = self._to_trainable_input_matrix(
                 full_grid_matrix=full_grid_matrix,
                 pattern_matrix=value,
                 flat=flat,
             )
-            vent_hole_gpr_input_matrix_table[key] = gpr_input
+            vent_hole_input_matrix_table[key] = trainable_input
 
-        return vent_hole_gpr_input_matrix_table
+        return vent_hole_input_matrix_table
 
     def _create_optimized_pca(
         self,
@@ -528,10 +536,10 @@ class ModelTrainer(Generic[ModelType]):
         external_pca: Union[PCA, None] = None,
     ) -> Tuple[np.ndarray[np.float64], np.ndarray[np.float64], np.ndarray[np.float64]]:
         """
-        Creates a GPR training set.
+        Creates a training set.
 
         Args:
-            vent_hole_gpr_matrix_table (dict[int, np.ndarray]): Table of vent hole GPR matrices.
+            vent_hole_matrix_table (dict[int, np.ndarray]): Table of vent hole GPR matrices.
             result_table (dict[int, Tuple[float, float, float]]): Table of results.
 
         Returns:
@@ -594,10 +602,10 @@ class ModelTrainer(Generic[ModelType]):
         Retrieves the test set.
 
         Returns:
-            (test_origin, test_input_matrix, test_output_matrix): Test set.
+            (`test_origin, test_input_matrix, test_output_matrix`): Test set.
 
         Args:
-            test_boundary (Union[tuple[float, float], None]): Boundary of the test set.
+            test_boundary (`Union[tuple[float, float], None]`): Boundary of the test set.
         """
 
         if self.test_set is None:
@@ -638,7 +646,7 @@ class ModelTrainer(Generic[ModelType]):
                 grid_w=self.grid_bound_width,
             )
         )
-        vent_hole_gpr_input_matrix_table: dict[int, np.ndarray[np.float64]] = (
+        vent_hole_input_matrix_table: dict[int, np.ndarray[np.float64]] = (
             self._create_vent_hole_input_matrix(
                 vent_hole_total_matrix_table=vent_hole_hole_matrix_table,
                 resolution=self.grid_resolution,
@@ -647,7 +655,7 @@ class ModelTrainer(Generic[ModelType]):
             )
         )
         x_original, x_reduction, y = self._create_training_set(
-            vent_hole_matrix_table=vent_hole_gpr_input_matrix_table,
+            vent_hole_matrix_table=vent_hole_input_matrix_table,
             result_table=result_table,
             skip_pca_recalculation=skip_pca_recalculation,
             external_pca=external_pca,
@@ -678,9 +686,8 @@ class ModelTrainer(Generic[ModelType]):
             test_boundary (Union[tuple[int, int], None]): Boundary of the test set.
 
         Returns:
-            `(train_x_original, train_x_reduction, train_y)`: Training set with original input.
-            or
-            `(train_x_reduction, train_y)`: Training set.
+        - (`train_x_original, train_x_reduction, train_y`): Training set with original input.
+        - (`train_x_reduction, train_y`): Training set.
 
         Examples:
             >>> trainer.get_train_set()
