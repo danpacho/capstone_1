@@ -33,7 +33,7 @@ def to_model_input(
             ▼
         pattern_input
             ▼
-        gpr_input: np.array([0,0,-1], [0,1,-1], ... ,[1,1,1], [1,2,1], ...)
+        model_input: np.array([0,0,-1, 0,1,-1, ... , 1,1,1, 1,2,1])
         ```
     """
     full_coord = Grid(bound=bound, k=resolution).generate_grid()
@@ -70,6 +70,7 @@ def to_model_input(
         raise ValueError("The shape of the `gpr_input` is not equal to 3.")
 
     final_input = gpr_input.reshape(1, -1)[0] if flat else gpr_input.reshape(1, -1)
+
     final_input = pca.transform(final_input)
 
     return final_input
