@@ -5,7 +5,8 @@ GPRModelTrainer class which is responsible for training a Gaussian Process Regre
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
 
-from src.prediction.model_trainer import ModelTrainer
+from src.prediction.regression.regression_model_trainer import ModelTrainer
+
 
 # pylint: disable=invalid-name
 

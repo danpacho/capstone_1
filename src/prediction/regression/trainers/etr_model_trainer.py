@@ -4,7 +4,8 @@ ETRModelTrainer class which is responsible for training a Extra Trees Regressor 
 
 from sklearn.ensemble import ExtraTreesRegressor
 
-from src.prediction.model_trainer import ModelTrainer
+from src.prediction.regression.regression_model_trainer import ModelTrainer
+
 
 # pylint: disable=invalid-name
 

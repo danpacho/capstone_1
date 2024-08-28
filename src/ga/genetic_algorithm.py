@@ -1,7 +1,7 @@
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
-from src.prediction.rf_model_trainer import RfModelTrainer
-from src.prediction.gpr_model_trainer import GPRModelTrainer
+from src.prediction.trainers.rf_model_trainer import RfModelTrainer
+from src.prediction.trainers.gpr_model_trainer import GPRModelTrainer
 from src.ga.chromosome.vent_hole import VentHole
 
 from src.ga.gene.shape.shape_variations import (

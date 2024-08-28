@@ -4,7 +4,8 @@ CRTModelTrainer class which is responsible for training a Classification and Reg
 
 from sklearn.tree import DecisionTreeRegressor
 
-from src.prediction.model_trainer import ModelTrainer
+from src.prediction.regression.regression_model_trainer import ModelTrainer
+
 
 # pylint: disable=invalid-name
 

@@ -5,7 +5,8 @@ EnsemModelTrainer class which is responsible for training a Decesion Tree based 
 from sklearn.ensemble import BaggingRegressor
 from sklearn.tree import DecisionTreeRegressor
 
-from src.prediction.model_trainer import ModelTrainer
+from src.prediction.regression.regression_model_trainer import ModelTrainer
+
 
 # pylint: disable=invalid-name
 

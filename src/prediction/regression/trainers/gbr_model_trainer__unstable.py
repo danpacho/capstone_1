@@ -5,7 +5,8 @@ ModelTrainer class which is responsible for training a Gradient Boosting Regress
 from typing import Union
 from xgboost import xgb  # pylint: disable=no-name-in-module
 
-from src.prediction.model_trainer import ModelTrainer
+from src.prediction.regression.regression_model_trainer import ModelTrainer
+
 
 # pylint: disable=invalid-name
 
