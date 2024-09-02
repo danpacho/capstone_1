@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 
 from src.geometry.vector import V3_group
 from src.prediction.model_trainer import ModelTrainer
-from src.prediction.to_model_input import to_model_input
+from src.prediction.regression.to_model_input import to_model_input
 from src.ga.chromosome.vent_hole import VentHole
 from src.ga.p2_fitness.fitness_calculator import FitnessCalculator
 
