@@ -24,7 +24,6 @@ class ModelTrainer:
         grid_bound (Union[tuple[tuple[float, float], tuple[float, float]], None]): Boundaries of the grid.
         train_config (dict[str, str]): Training configuration.
         train_id (str): Training ID.
-        desired_variance (float): Desired variance for PCA dimension reduction level optimization.
     """
 
     root_path: str = os.path.join(os.getcwd(), "model")
@@ -39,8 +38,6 @@ class ModelTrainer:
         grid_resolution: float,
         grid_bound_width: float,
         grid_bound: Union[tuple[tuple[float, float], tuple[float, float]], None] = None,
-        desired_variance: float = 0.95,
-        can_calculate_std: bool = False,
     ) -> None:
         """
         Initializes the ModelTrainer.
@@ -51,8 +48,6 @@ class ModelTrainer:
             grid_resolution (`float`): Resolution of the grid.
             grid_bound_width (`float`): Width of the grid boundary.
             grid_bound (`Union[tuple[tuple[float, float], tuple[float, float]], None]`): Boundaries of the grid.
-            desired_variance (`float`): Desired variance for `PCA` dimension reduction level optimization.
-            can_calculate_std (`bool`): Whether the model can calculate the standard deviation.
         """
         ModelTrainer._box_title(f"Model Trainer: {model_name}")
 
@@ -66,14 +61,11 @@ class ModelTrainer:
         self.grid_bound_width = grid_bound_width
         self.grid_bound = grid_bound
 
-        self.can_calculate_std = can_calculate_std
-
         self.train_config: dict[str, str] = {
             "grid_scale": str(self.grid_scale),
             "grid_resolution": str(self.grid_resolution),
             "grid_bound_width": str(self.grid_bound_width),
             "grid_bound": str(self.grid_bound) if self.grid_bound else "None",
-            "desired_variance": str(desired_variance),
         }
         seed_str = "".join(self.train_config.values())
         self.train_id: str = ModelTrainer._generate_uuid_from_seed(seed_str)

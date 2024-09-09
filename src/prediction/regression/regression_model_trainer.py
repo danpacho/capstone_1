@@ -63,6 +63,14 @@ class ModelTrainer(Generic[ModelType]):
             desired_variance (`float`): Desired variance for `PCA` dimension reduction level optimization.
             can_calculate_std (`bool`): Whether the model can calculate the standard deviation.
         """
+        super().__init__(
+            model_name=model_name,
+            grid_scale=grid_scale,
+            grid_resolution=grid_resolution,
+            grid_bound_width=grid_bound_width,
+            grid_bound=grid_bound,
+        )
+
         self._box_title(f"Model Trainer: {model_name}")
 
         self.model_name = model_name.lower()
