@@ -5,3 +5,4 @@ __pycache__
 __*.json
 store
 model/train
+model/images
