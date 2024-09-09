@@ -6,3 +6,4 @@ __*.json
 store
 model/train
 model/images
+$$params$$
