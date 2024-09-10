@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable, Union
 import numpy as np
 
 from src.geometry.vector import V, V2_group
@@ -103,6 +104,7 @@ class Grid:
     def discretize_points(
         points: V2_group,
         k: float,
+        point_constraint: Union[Callable[[V2_group], bool], None] = None,
     ) -> V2_group:
         """
         Discretize points into grid vector
@@ -110,6 +112,7 @@ class Grid:
         Args:
             points: Gv - arbitrary points
             k: float - grid cell size
+            point_constraint: Callable[[V2_group], bool] - point constraint
         """
         discretized_matrix = V.initialize_matrix_2d()
         coord_set: set[str] = set()
@@ -138,6 +141,9 @@ class Grid:
             )
 
             for fitting_vec in fitting_vec_groups:
+                if point_constraint is not None and point_constraint(fitting_vec):
+                    continue
+
                 discretized_matrix = add_coord_to_discretized_points(
                     np.array(fitting_vec), discretized_matrix
                 )
