@@ -1,6 +1,7 @@
 from typing import Literal
 from random import choice
 
+from src.geometry.vector import V2_group
 from src.geometry.pattern_unit import Pattern, PatternTransformationMatrix
 from src.ga.chromosome.chromosome import Chromosome
 from src.ga.gene.shape.shape_gene import ShapeGene
@@ -25,12 +26,29 @@ class VentHole(Chromosome[tuple[ShapeGene, PatternGene]]):
         )
 
         self.pattern_bound = pattern_bound
+
+        grid_width = pattern_bound[1][1] - pattern_bound[1][0]
+
+        def is_inside_of_vent(
+            vec: V2_group,
+        ) -> bool:
+            x, y = vec
+            # Check if the point is inside the target vent hole design domain
+            # 1) y >= x / 5 + 2 * grid_width / 5
+            # 2) y <= -x / 5 - 2 * grid_width / 5
+            is_inside_of_vent = (
+                y >= x / 5 + 2 * grid_width / 5 or y <= -x / 5 - 2 * grid_width / 5
+            )
+
+            return is_inside_of_vent
+
         self.pattern = Pattern(
             PatternTransformationMatrix(
                 self.gene_tuple[0].pattern_unit,
                 self.gene_tuple[1].param.transformation,
                 pattern_bound=pattern_bound,
-            )
+            ),
+            pattern_constraint=is_inside_of_vent,
         )
 
     def crossover_genes(self, other_chromosome: "VentHole") -> "VentHole":
