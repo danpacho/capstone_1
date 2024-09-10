@@ -80,6 +80,13 @@ class ModelTrainer:
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def get_model(self):
+        """
+        Returns the model.
+        """
+        raise NotImplementedError
+
     @staticmethod
     def _generate_uuid_from_seed(seed_string: str) -> str:
         hash_bytes = hashlib.sha256(seed_string.encode()).digest()
