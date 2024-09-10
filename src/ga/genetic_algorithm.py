@@ -1,7 +1,9 @@
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
-from src.prediction.trainers.rf_model_trainer import RfModelTrainer
-from src.prediction.trainers.gpr_model_trainer import GPRModelTrainer
+from src.prediction.regression.trainers.rf_model_trainer import (
+    RfModelTrainer,
+)
+from src.prediction.regression.trainers.gpr_model_trainer import GPRModelTrainer
 from src.ga.chromosome.vent_hole import VentHole
 
 from src.ga.gene.shape.shape_variations import (
@@ -56,7 +58,7 @@ MAX_TEMP_STD_CRITERION: Criterion = ("lower", 0, 10)  # Lower is better, range 0
 # 2. Define the grid parameters
 GRID_SCALE = 1
 GRID_RESOLUTION = 2.0
-GRID_WIDTH = 60
+GRID_WIDTH = 100
 GRID_BOUND = (
     (-GRID_WIDTH / 2, GRID_WIDTH / 2),
     (-GRID_WIDTH / 2, GRID_WIDTH / 2),
@@ -157,14 +159,7 @@ suite2 = GAPipeline[VentHole](
         grid_resolution=GRID_RESOLUTION,
         pattern_bound=GRID_BOUND,
         pattern_gene_pool=[circular_params],
-        shape_gene_pool=[
-            circle_params,
-            #
-            # wing_params,
-            #
-            # trapezoid_params,
-            # triangle_params,
-        ],
+        shape_gene_pool=[circle_params],
     ),
 )
 
@@ -197,14 +192,7 @@ suite2_2 = GAPipeline[VentHole](
         grid_resolution=GRID_RESOLUTION,
         pattern_bound=GRID_BOUND,
         pattern_gene_pool=[circular_params, corn_params, grid_params],
-        shape_gene_pool=[
-            circle_params,
-            #
-            # wing_params,
-            #
-            # trapezoid_params,
-            # triangle_params,
-        ],
+        shape_gene_pool=[circle_params],
     ),
 )
 
