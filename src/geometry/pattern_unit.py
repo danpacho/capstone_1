@@ -614,7 +614,9 @@ class Pattern:
     def __init__(
         self,
         pattern_transformation_matrix: PatternTransformationMatrix,
+        pattern_constraint: Union[Callable[[V2_group], bool], None] = None,
     ) -> None:
+        self.pattern_constraint = pattern_constraint
         self.pattern_transformation_matrix = pattern_transformation_matrix
 
         self.pattern_matrix: V2_group = V.initialize_matrix_2d()
@@ -644,7 +646,11 @@ class Pattern:
                     is_3dim=False,
                 ),
                 self.pattern_unit.grid.k,
+                point_constraint=self.pattern_constraint,
             )
+            if len(transformed_t_vec) <= 1:
+                continue
+
             t_id = f"{transformed_t_vec[0]}_{transformed_t_vec[1]}"
 
             # Remove duplicated transformation
