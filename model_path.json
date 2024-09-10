@@ -1,0 +1,5 @@
+{
+    "drag": "model_cnn/$$params$$/drag.pth",
+    "avg_temp": "model_cnn/$$params$$/avg_temp.pth",
+    "max_temp": "model_cnn/$$params$$/max_temp.pth"
+}
